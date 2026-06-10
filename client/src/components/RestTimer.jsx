@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const PRESETS = [60, 90, 120, 180];
 
@@ -7,31 +7,47 @@ export default function RestTimer({ onDismiss }) {
   const [remaining, setRemaining] = useState(90);
   const [running, setRunning] = useState(true);
   const intervalRef = useRef(null);
+  const remainingRef = useRef(90);
+
+  const startInterval = useCallback((initial) => {
+    clearInterval(intervalRef.current);
+    remainingRef.current = initial;
+    intervalRef.current = setInterval(() => {
+      remainingRef.current -= 1;
+      setRemaining(remainingRef.current);
+      if (remainingRef.current <= 0) {
+        clearInterval(intervalRef.current);
+        setRunning(false);
+      }
+    }, 1000);
+  }, []);
 
   useEffect(() => {
-    if (running && remaining > 0) {
-      intervalRef.current = setInterval(() => {
-        setRemaining(r => {
-          if (r <= 1) { clearInterval(intervalRef.current); setRunning(false); return 0; }
-          return r - 1;
-        });
-      }, 1000);
-    }
+    startInterval(90);
     return () => clearInterval(intervalRef.current);
-  }, [running]);
+  }, []);
 
   const reset = (s) => {
-    clearInterval(intervalRef.current);
     setSeconds(s);
     setRemaining(s);
     setRunning(true);
+    startInterval(s);
+  };
+
+  const togglePause = () => {
+    if (running) {
+      clearInterval(intervalRef.current);
+      setRunning(false);
+    } else {
+      startInterval(remaining);
+      setRunning(true);
+    }
   };
 
   const pct = remaining / seconds;
   const r = 44;
   const circumference = 2 * Math.PI * r;
   const dashOffset = circumference * (1 - pct);
-
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
   const done = remaining === 0;
@@ -56,8 +72,8 @@ export default function RestTimer({ onDismiss }) {
             Rest Timer
           </div>
 
-          {/* Circular timer */}
-          <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 16px' }}>
+          <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 16px' }}
+            onClick={togglePause}>
             <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
               <circle cx="60" cy="60" r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
               <circle cx="60" cy="60" r={r} fill="none"
@@ -72,22 +88,28 @@ export default function RestTimer({ onDismiss }) {
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
             }}>
               <div style={{ fontSize: '1.8rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: done ? 'var(--success)' : 'var(--text)' }}>
                 {done ? 'GO' : `${mins}:${String(secs).padStart(2, '0')}`}
               </div>
+              {!done && (
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  {running ? 'tap to pause' : '▶ paused'}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Presets */}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
             {PRESETS.map(s => (
               <button key={s} onClick={() => reset(s)}
                 style={{
                   padding: '0.35rem 0.75rem', borderRadius: 999,
-                  background: seconds === s && running ? 'var(--accent)30' : 'var(--bg-elevated)',
-                  border: `1px solid ${seconds === s && running ? 'var(--accent)' : 'var(--border)'}`,
-                  fontSize: '0.8rem', fontWeight: 700, color: seconds === s && running ? 'var(--accent)' : 'var(--text-muted)',
+                  background: seconds === s ? 'var(--accent)30' : 'var(--bg-elevated)',
+                  border: `1px solid ${seconds === s ? 'var(--accent)' : 'var(--border)'}`,
+                  fontSize: '0.8rem', fontWeight: 700,
+                  color: seconds === s ? 'var(--accent)' : 'var(--text-muted)',
                 }}>
                 {s >= 60 ? `${s / 60}m` : `${s}s`}
               </button>
@@ -96,7 +118,7 @@ export default function RestTimer({ onDismiss }) {
         </div>
 
         <button className="btn btn-primary" onClick={onDismiss}>
-          {done ? 'Start Next Set' : 'Skip Rest'}
+          {done ? 'Start Next Set ✓' : 'Skip Rest'}
         </button>
       </div>
     </div>

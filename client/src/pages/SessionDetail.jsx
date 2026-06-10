@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
+import { charStore } from '../store/character';
 import GymLogger from '../components/GymLogger';
 import PlateDisplay from '../components/PlateDisplay';
 import MissedModal from '../components/MissedModal';
@@ -30,6 +31,7 @@ export default function SessionDetail() {
       completedAt: new Date().toISOString(),
       ...(gymData ? { gymData } : {}),
     });
+    charStore.addXP(session.discipline);
     navigate(-1);
   };
 

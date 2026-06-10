@@ -7,6 +7,7 @@ import SessionDetail from './pages/SessionDetail';
 import Overview from './pages/Overview';
 import Settings from './pages/Settings';
 import Assessment from './pages/Assessment';
+import Wardrobe from './pages/Wardrobe';
 import './styles/global.css';
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
         <Route path="/overview" element={<Overview />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/assessment" element={<Assessment />} />
+        <Route path="/wardrobe" element={<Wardrobe />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
