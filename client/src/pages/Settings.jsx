@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import { getBarOptions } from '../lib/plateCalc';
 import { generatePlan } from '../lib/planEngine';
+import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -19,6 +20,15 @@ export default function Settings() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [baselines, setBaselines] = useState({ ...profile?.baselines });
   const [baselinesSaved, setBaselinesSaved] = useState(false);
+  const [cardioSaved, setCardioSaved] = useState(false);
+
+  const saveBaselines = (flagSetter) => {
+    const updated = { ...profile, baselines: { ...profile.baselines, ...baselines } };
+    storage.setProfile(updated);
+    storage.setPlan(generatePlan(updated));
+    flagSetter(true);
+    setTimeout(() => flagSetter(false), 2500);
+  };
 
   const setB = (k, v) => setBaselines(b => ({ ...b, [k]: Number(v) || 0 }));
 
@@ -129,6 +139,69 @@ export default function Settings() {
             setTimeout(() => setBaselinesSaved(false), 2500);
           }}>
             {baselinesSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
+          </button>
+        </div>
+      </div>
+
+      {/* Cardio baselines */}
+      <div>
+        <div className="label">Cardio Baselines</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Run, swim &amp; ruck targets. Scroll the wheels or tap ▲ ▼. Save &amp; Regenerate
+            updates run/swim/ruck paces in your plan.
+          </div>
+
+          {[
+            { key: 'run2400s', label: '2.4km Run Time', maxMin: 30 },
+            { key: 'swim400s', label: '400m Swim Time', maxMin: 25 },
+          ].map(({ key, label, maxMin }) => (
+            <div key={key} style={{ borderTop: '1px solid var(--border)', paddingTop: '0.6rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{label}</span>
+                <span style={{ fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtTime(baselines[key] || 0)}
+                </span>
+              </div>
+              <TimePicker
+                seconds={Math.round(baselines[key] || 0)}
+                onChange={v => setBaselines(b => ({ ...b, [key]: v }))}
+                maxMin={maxMin}
+              />
+            </div>
+          ))}
+
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ruck Pace (min/km)</span>
+              <span style={{ fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+                {fmtTime(Math.round((baselines.ruckPaceMinKm || 0) * 60))}
+              </span>
+            </div>
+            <TimePicker
+              seconds={Math.round((baselines.ruckPaceMinKm || 0) * 60)}
+              onChange={v => setBaselines(b => ({ ...b, ruckPaceMinKm: v / 60 }))}
+              maxMin={20}
+            />
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ruck Load</span>
+              <span style={{ fontWeight: 800, color: 'var(--accent)' }}>
+                {baselines.ruckLoadKg || 0} {profile?.unit || 'kg'}
+              </span>
+            </div>
+            <NumberWheel
+              value={Number(baselines.ruckLoadKg || 0)}
+              onChange={v => setBaselines(b => ({ ...b, ruckLoadKg: v }))}
+              from={0} to={60} step={(profile?.unit || 'kg') === 'kg' ? 2.5 : 5}
+              unit={profile?.unit || 'kg'}
+            />
+          </div>
+
+          <button className="btn btn-primary" onClick={() => saveBaselines(setCardioSaved)}>
+            {cardioSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
           </button>
         </div>
       </div>

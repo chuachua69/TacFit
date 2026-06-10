@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import { generatePlan } from '../lib/planEngine';
 import { getBarOptions } from '../lib/plateCalc';
+import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
 
 const STEPS = ['basics', 'schedule', 'baselines-lift', 'baselines-cardio', 'review'];
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -68,10 +69,10 @@ export default function Onboarding() {
       bench: '',
       ohp: '',
       row: '',
-      run2400: '12:00',
-      swim400: '09:00',
-      ruckPace: '08:00',
-      ruckLoad: '20',
+      run2400: 720,  // seconds (12:00)
+      swim400: 540,  // seconds (09:00)
+      ruckPace: 480, // seconds/km (08:00)
+      ruckLoad: 20,  // kg
     },
   });
 
@@ -112,9 +113,9 @@ export default function Onboarding() {
         bench: toOneRM(form.baselines.bench),
         ohp: toOneRM(form.baselines.ohp),
         row: toOneRM(form.baselines.row),
-        run2400s: timeToSeconds(form.baselines.run2400),
-        swim400s: timeToSeconds(form.baselines.swim400),
-        ruckPaceMinKm: timeToSeconds(form.baselines.ruckPace) / 60,
+        run2400s: form.baselines.run2400,
+        swim400s: form.baselines.swim400,
+        ruckPaceMinKm: form.baselines.ruckPace / 60,
         ruckLoadKg: Number(form.baselines.ruckLoad),
       },
     };
@@ -318,27 +319,44 @@ export default function Onboarding() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 4 }}>Cardio Baselines</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Format: mm:ss</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Scroll the wheels or tap ▲ ▼ to set each time.
+            </div>
           </div>
 
           {[
-            { key: 'run2400', label: '2.4km Run Time', placeholder: '12:00' },
-            { key: 'swim400', label: '400m Swim Time', placeholder: '09:00' },
-            { key: 'ruckPace', label: 'Ruck Pace (min/km)', placeholder: '08:00' },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <div className="label">{label}</div>
-              <input type="text" inputMode="numeric" placeholder={placeholder}
-                value={form.baselines[key]}
-                onChange={e => setBaseline(key, e.target.value)} />
+            { key: 'run2400',  label: '2.4km Run Time',     maxMin: 30 },
+            { key: 'swim400',  label: '400m Swim Time',     maxMin: 25 },
+            { key: 'ruckPace', label: 'Ruck Pace (min/km)', maxMin: 20 },
+          ].map(({ key, label, maxMin }) => (
+            <div key={key} className="card" style={{ padding: '0.75rem 1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="label" style={{ marginBottom: 0 }}>{label}</div>
+                <div style={{ fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtTime(form.baselines[key])}
+                </div>
+              </div>
+              <TimePicker
+                seconds={form.baselines[key]}
+                onChange={v => setBaseline(key, v)}
+                maxMin={maxMin}
+              />
             </div>
           ))}
 
-          <div>
-            <div className="label">Ruck Load ({form.unit})</div>
-            <input type="number" inputMode="decimal" placeholder="20"
-              value={form.baselines.ruckLoad}
-              onChange={e => setBaseline('ruckLoad', e.target.value)} />
+          <div className="card" style={{ padding: '0.75rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div className="label" style={{ marginBottom: 0 }}>Ruck Load</div>
+              <div style={{ fontWeight: 800, color: 'var(--accent)' }}>
+                {form.baselines.ruckLoad} {form.unit}
+              </div>
+            </div>
+            <NumberWheel
+              value={Number(form.baselines.ruckLoad)}
+              onChange={v => setBaseline('ruckLoad', v)}
+              from={0} to={60} step={form.unit === 'kg' ? 2.5 : 5}
+              unit={form.unit}
+            />
           </div>
 
           <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
@@ -370,9 +388,9 @@ export default function Onboarding() {
                 [`Bench ${rmMode.toUpperCase()}`, `${form.baselines.bench} ${form.unit}`],
                 [`OHP ${rmMode.toUpperCase()}`, `${form.baselines.ohp} ${form.unit}`],
                 [`Row ${rmMode.toUpperCase()}`, `${form.baselines.row} ${form.unit}`],
-                ['2.4km run', form.baselines.run2400],
-                ['400m swim', form.baselines.swim400],
-                ['Ruck pace', `${form.baselines.ruckPace}/km @ ${form.baselines.ruckLoad}${form.unit}`],
+                ['2.4km run', fmtTime(form.baselines.run2400)],
+                ['400m swim', fmtTime(form.baselines.swim400)],
+                ['Ruck pace', `${fmtTime(form.baselines.ruckPace)}/km @ ${form.baselines.ruckLoad}${form.unit}`],
               ].map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{k}</span>

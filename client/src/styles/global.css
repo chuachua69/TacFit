@@ -158,6 +158,12 @@ a {
 .tag-rest   { background: #66666620; color: var(--text-muted); }
 
 /* ─────────────────────────────────────────────
+   Wheel picker (hide scrollbar, keep scroll)
+   ───────────────────────────────────────────── */
+.wheel-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.wheel-scroll::-webkit-scrollbar { display: none; }
+
+/* ─────────────────────────────────────────────
    Character idle bob
    ───────────────────────────────────────────── */
 @keyframes tacBob {
