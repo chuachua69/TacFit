@@ -7,11 +7,14 @@ import { generatePlan } from '../lib/planEngine';
 export default function Settings() {
   const navigate = useNavigate();
   const profile = storage.getProfile();
+  const todayStr = new Date().toISOString().split('T')[0];
   const [form, setForm] = useState({
     name: profile?.name || '',
     unit: profile?.unit || 'kg',
     barWeight: profile?.barWeight || 20,
+    startDate: profile?.startDate || todayStr,
   });
+  const [planStartSaved, setPlanStartSaved] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [baselines, setBaselines] = useState({ ...profile?.baselines });
@@ -126,6 +129,34 @@ export default function Settings() {
             setTimeout(() => setBaselinesSaved(false), 2500);
           }}>
             {baselinesSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
+          </button>
+        </div>
+      </div>
+
+      {/* Plan start date */}
+      <div>
+        <div className="label">Programme Start</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Pick the Monday-of-week you want Week 1 (Build) to begin. The 6-week
+            plan is laid out forward from here.
+          </div>
+          <div>
+            <div className="label">Start Date</div>
+            <input
+              type="date"
+              value={form.startDate}
+              onChange={e => set('startDate', e.target.value)}
+            />
+          </div>
+          <button className="btn btn-primary" onClick={() => {
+            const updated = { ...storage.getProfile(), startDate: form.startDate };
+            storage.setProfile(updated);
+            storage.setPlan(generatePlan(updated));
+            setPlanStartSaved(true);
+            setTimeout(() => setPlanStartSaved(false), 2500);
+          }}>
+            {planStartSaved ? 'Plan Rescheduled ✓' : 'Set Start Date & Build Plan'}
           </button>
         </div>
       </div>

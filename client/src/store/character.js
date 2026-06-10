@@ -13,6 +13,24 @@ export const SESSION_XP = { gym: 30, run: 20, ruck: 25, swim: 20 };
 // Level thresholds (xp needed for each level)
 export const LEVEL_XP = [0, 0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200];
 
+// Rank / qualification progression — each level is a promotion.
+// `tab` = special qualification badge earned at that level (SAF-style).
+export const RANKS = [
+  null, // index 0 unused
+  { title: 'Recruit',          tab: null,          badge: '▮',    color: '#8a8a8a' }, // Lv1
+  { title: 'Private',          tab: null,          badge: '▮▮',   color: '#9a9a9a' }, // Lv2
+  { title: 'Lance Corporal',   tab: 'Marksman',    badge: '◢',    color: '#b0925a' }, // Lv3
+  { title: 'Corporal',         tab: 'Marksman',    badge: '◢◢',   color: '#c8a96e' }, // Lv4
+  { title: 'Sergeant',         tab: 'Ranger',      badge: '★',    color: '#52c878' }, // Lv5
+  { title: 'Staff Sergeant',   tab: 'Commando',    badge: '★★',   color: '#52a8e0' }, // Lv6
+  { title: 'Master Sergeant',  tab: 'Diver',       badge: '★★★',  color: '#52c8c8' }, // Lv7
+  { title: 'Warrant Officer',  tab: 'Pathfinder',  badge: '◆',    color: '#a852e0' }, // Lv8
+  { title: 'Lieutenant',       tab: 'Operator',    badge: '◆◆',   color: '#e0a052' }, // Lv9
+  { title: 'Captain',          tab: 'Elite Operator', badge: '◆◆◆', color: '#e0c052' }, // Lv10
+];
+
+export const rankFor = (level) => RANKS[Math.min(level, RANKS.length - 1)] || RANKS[1];
+
 export const ITEMS = [
   // Head
   { id: 'beret_green',   slot: 'head', name: 'Green Beret',    unlockLevel: 1,  color: '#3d5a2a' },
@@ -40,6 +58,11 @@ export const charStore = {
   addXP: (discipline) => {
     const char = charStore.get();
     const xpGain = SESSION_XP[discipline] || 20;
+    const fromLevel = char.level;
+    // Seed the promotion baseline to the pre-XP level so the level-up is detected.
+    if (localStorage.getItem('tacfit_seen_level') == null) {
+      localStorage.setItem('tacfit_seen_level', String(fromLevel));
+    }
     char.xp += xpGain;
 
     // Level up check
@@ -51,7 +74,20 @@ export const charStore = {
     }
 
     charStore.save(char);
-    return { char, xpGain };
+    return { char, xpGain, leveledUp: char.level > fromLevel, fromLevel, toLevel: char.level };
+  },
+
+  // Promotion detection (works regardless of where XP was earned).
+  // Returns the new level if the player has leveled up since last seen, else null.
+  pendingPromotion: () => {
+    const char = charStore.get();
+    const seen = Number(localStorage.getItem('tacfit_seen_level') || char.level);
+    if (char.level > seen) return { fromLevel: seen, toLevel: char.level };
+    return null;
+  },
+  markPromotionSeen: () => {
+    const char = charStore.get();
+    localStorage.setItem('tacfit_seen_level', String(char.level));
   },
 
   equip: (itemId) => {

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
-import { charStore, LEVEL_XP } from '../store/character';
+import { charStore, LEVEL_XP, rankFor } from '../store/character';
 import WellnessModal from '../components/WellnessModal';
 import BottomNav from '../components/BottomNav';
 import PixelCharacter from '../components/PixelCharacter';
+import BulletFX from '../components/BulletFX';
+import PromotionModal from '../components/PromotionModal';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
 
@@ -51,8 +53,10 @@ export default function Dashboard() {
   const profile = storage.getProfile();
   const [showWellness, setShowWellness] = useState(false);
   const [char, setChar] = useState(charStore.get());
+  const [promo, setPromo] = useState(null);
   const wellness = storage.getTodayWellness();
   const logs = storage.getLogs();
+  const rank = rankFor(char.level);
 
   useEffect(() => {
     if (!wellness) {
@@ -60,6 +64,15 @@ export default function Dashboard() {
       return () => clearTimeout(timer);
     }
   }, [wellness]);
+
+  // Detect a pending promotion (level gained since last visit)
+  useEffect(() => {
+    const p = charStore.pendingPromotion();
+    if (p) {
+      const t = setTimeout(() => setPromo(p), 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   const todaySessions = getTodaySessions(plan);
   const progress = getCurrentWeek(plan, logs);
@@ -69,13 +82,35 @@ export default function Dashboard() {
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: '1.25rem', paddingBottom: '5rem' }}>
+      <BulletFX />
       {showWellness && <WellnessModal onClose={() => setShowWellness(false)} />}
+      {promo && (
+        <PromotionModal
+          fromLevel={promo.fromLevel}
+          toLevel={promo.toLevel}
+          onClose={() => { charStore.markPromotionSeen(); setPromo(null); }}
+        />
+      )}
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--accent)' }}>TACFIT</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{profile?.name || 'Soldier'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: rank.color, letterSpacing: '0.02em' }}>
+              {rank.badge} {rank.title}
+            </span>
+            {rank.tab && (
+              <span style={{
+                fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+                padding: '1px 6px', borderRadius: 999,
+                background: `${rank.color}22`, color: rank.color, border: `1px solid ${rank.color}55`,
+              }}>
+                {rank.tab}
+              </span>
+            )}
+          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 1 }}>{profile?.name || 'Soldier'}</div>
         </div>
         {wellness && (
           <div style={{ textAlign: 'right' }}>

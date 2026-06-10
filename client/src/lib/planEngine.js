@@ -39,14 +39,28 @@ function getScheduleSlots(schedule) {
   return slots;
 }
 
-// Get the Monday of the current week
-function getThisMonday() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const day = today.getDay(); // 0=Sun
+// Get the Monday of a given week (defaults to current week)
+function mondayOf(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0=Sun
   const diff = day === 0 ? -6 : 1 - day;
-  today.setDate(today.getDate() + diff);
-  return today;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function getThisMonday() {
+  return mondayOf(new Date());
+}
+
+// Anchor Monday for the plan: from profile.startDate if set, else this week.
+function getAnchorMonday(profile) {
+  if (profile?.startDate) {
+    // startDate is 'YYYY-MM-DD'; parse as local date
+    const [y, m, dd] = profile.startDate.split('-').map(Number);
+    if (y && m && dd) return mondayOf(new Date(y, m - 1, dd));
+  }
+  return getThisMonday();
 }
 
 function slotDate(monday, weekIndex, dayOffset) {
@@ -171,7 +185,7 @@ export function generatePlan(profile) {
   const slots = getScheduleSlots(schedule);
   const sessionsPerWeek = slots.length;
   const rotation = buildRotation(sessionsPerWeek, profile.focus);
-  const monday = getThisMonday();
+  const monday = getAnchorMonday(profile);
 
   let gymIdx = 0;
   const weeks = [];

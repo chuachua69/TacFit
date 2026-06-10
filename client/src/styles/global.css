@@ -156,3 +156,107 @@ a {
 .tag-ruck   { background: #c8785220; color: var(--ruck); }
 .tag-gym    { background: #a852e020; color: var(--gym); }
 .tag-rest   { background: #66666620; color: var(--text-muted); }
+
+/* ─────────────────────────────────────────────
+   Character idle bob
+   ───────────────────────────────────────────── */
+@keyframes tacBob {
+  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+  50%      { transform: translateY(-2.4px) rotate(0.4deg); }
+}
+.tac-bob {
+  animation: tacBob 3.4s ease-in-out infinite;
+  transform-origin: 50px 110px;
+  transform-box: fill-box;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tac-bob { animation: none; }
+}
+
+/* ─────────────────────────────────────────────
+   Tracer / bullet fly-by overlay
+   ───────────────────────────────────────────── */
+.bullet-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+.tracer {
+  position: absolute;
+  left: -80px;
+  width: 46px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(232,208,80,0) 0%, rgba(232,208,80,0.9) 70%, #fff 100%);
+  box-shadow: 0 0 6px 1px rgba(232,208,80,0.7), 0 0 14px 2px rgba(232,208,80,0.35);
+  animation: tracerFly 1.25s cubic-bezier(0.4, 0, 0.9, 0.4) forwards;
+}
+.tracer::after {
+  content: '';
+  position: absolute;
+  right: -1px; top: -1px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 2px rgba(255,255,255,0.8);
+}
+@keyframes tracerFly {
+  0%   { transform: translateX(0) scaleX(0.5); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateX(108vw) scaleX(1.3); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bullet-layer { display: none; }
+}
+
+/* ─────────────────────────────────────────────
+   Promotion modal
+   ───────────────────────────────────────────── */
+@keyframes promoFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes promoPop {
+  0%   { transform: scale(0.7) translateY(20px); opacity: 0; }
+  60%  { transform: scale(1.04) translateY(0); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes promoStarSpin {
+  from { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.15); }
+  to   { transform: rotate(360deg) scale(1); }
+}
+@keyframes promoGlow {
+  0%, 100% { box-shadow: 0 0 24px 2px rgba(200,169,110,0.35); }
+  50%      { box-shadow: 0 0 40px 8px rgba(200,169,110,0.6); }
+}
+.promo-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,0.86);
+  display: flex; align-items: center; justify-content: center;
+  animation: promoFade 0.25s ease;
+  padding: 1.5rem;
+}
+.promo-card {
+  background: linear-gradient(160deg, #1a1a1a, #0e0e0e);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 320px; width: 100%;
+  animation: promoPop 0.5s cubic-bezier(0.18, 0.9, 0.3, 1.2), promoGlow 2.2s ease-in-out infinite;
+}
+.promo-badge {
+  font-size: 3.2rem;
+  display: inline-block;
+  animation: promoStarSpin 1.6s ease-in-out;
+}
+
+/* ─────────────────────────────────────────────
+   Rest timer "GO" flash
+   ───────────────────────────────────────────── */
+@keyframes restDoneFlash {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.18); opacity: 0.75; }
+}
+.rest-done-pulse { animation: restDoneFlash 0.7s ease-in-out infinite; }

@@ -101,41 +101,39 @@ export default function PixelCharacter({
       onClick={onClick}
     >
 
+      {/* Bobbing group — gentle idle motion (UI overlay stays static below) */}
+      <g className="tac-bob" style={{ animationDelay: `${(physique?.length || 0) * 0.13}s` }}>
+
       {/* ══════════════════════════════════════
           1. BOOTS  (drawn first, back layer)
           ══════════════════════════════════════ */}
       {footwear === 'boots' && <>
-        {/* ── Left boot ── */}
-        <path d="M16,102 L50,102 L52,114 L14,114 Z" fill={C.bo} />
-        {/* Left-edge highlight strip */}
-        <path d="M16,102 L25,102 L25,114 L14,114 Z" fill={C.boH} opacity="0.28" />
-        {/* Toe-cap darker facet */}
-        <path d="M14,109 L14,114 L52,114 L50,109 Z" fill={C.boS} />
-        {/* Sole block */}
-        <path d="M12,113 L54,113 L55,117 L11,117 Z" fill={C.boSl} />
-        {/* Top-edge rim highlight so boot reads on dark bg */}
-        <line x1="16" y1="102" x2="50" y2="102" stroke={C.boR} strokeWidth="1" opacity="0.8" />
-        {/* Lace rows */}
-        <line x1="19" y1="103.5" x2="47" y2="103.5" stroke="#4a4030" strokeWidth="0.7" opacity="0.6" />
-        <line x1="19" y1="106.5" x2="47" y2="106.5" stroke="#4a4030" strokeWidth="0.7" opacity="0.6" />
-        <line x1="18" y1="109.5" x2="48" y2="109.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.45" />
+        {/* ── Left boot ── compact, sits under left leg, clear center gap */}
+        <path d="M20,104 L46,104 L47,113 L19,113 Z" fill={C.bo} />
+        <path d="M20,104 L27,104 L27,113 L19,113 Z" fill={C.boH} opacity="0.28" />
+        <path d="M19,110 L19,113 L47,113 L46,110 Z" fill={C.boS} />
+        <path d="M17,112 L49,112 L50,116 L16,116 Z" fill={C.boSl} />
+        <line x1="20" y1="104" x2="46" y2="104" stroke={C.boR} strokeWidth="0.9" opacity="0.8" />
+        <line x1="23" y1="105.5" x2="43" y2="105.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.6" />
+        <line x1="22" y1="108"   x2="44" y2="108"   stroke="#4a4030" strokeWidth="0.6" opacity="0.55" />
+        <line x1="21" y1="110.5" x2="45" y2="110.5" stroke="#4a4030" strokeWidth="0.5" opacity="0.4" />
 
         {/* ── Right boot ── */}
-        <path d="M50,102 L84,102 L86,114 L48,114 Z" fill={C.bo} />
-        <path d="M75,102 L84,102 L86,114 L76,114 Z" fill={C.boH} opacity="0.28" />
-        <path d="M50,109 L48,114 L86,114 L84,109 Z" fill={C.boS} />
-        <path d="M46,113 L88,113 L89,117 L45,117 Z" fill={C.boSl} />
-        <line x1="50" y1="102" x2="84" y2="102" stroke={C.boR} strokeWidth="1" opacity="0.8" />
-        <line x1="53" y1="103.5" x2="81" y2="103.5" stroke="#4a4030" strokeWidth="0.7" opacity="0.6" />
-        <line x1="53" y1="106.5" x2="81" y2="106.5" stroke="#4a4030" strokeWidth="0.7" opacity="0.6" />
-        <line x1="52" y1="109.5" x2="82" y2="109.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.45" />
+        <path d="M54,104 L80,104 L81,113 L53,113 Z" fill={C.bo} />
+        <path d="M73,104 L80,104 L81,113 L74,113 Z" fill={C.boH} opacity="0.28" />
+        <path d="M53,110 L53,113 L81,113 L80,110 Z" fill={C.boS} />
+        <path d="M51,112 L83,112 L84,116 L50,116 Z" fill={C.boSl} />
+        <line x1="54" y1="104" x2="80" y2="104" stroke={C.boR} strokeWidth="0.9" opacity="0.8" />
+        <line x1="57" y1="105.5" x2="77" y2="105.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.6" />
+        <line x1="56" y1="108"   x2="78" y2="108"   stroke="#4a4030" strokeWidth="0.6" opacity="0.55" />
+        <line x1="55" y1="110.5" x2="79" y2="110.5" stroke="#4a4030" strokeWidth="0.5" opacity="0.4" />
       </>}
 
       {footwear === 'shoes' && <>
-        <path d="M18,104 L50,104 L52,114 L16,114 Z" fill="#3a2e24" />
-        <path d="M14,112 L54,112 L54,116 L13,116 Z" fill="#1e1812" />
-        <path d="M50,104 L82,104 L84,114 L48,114 Z" fill="#3a2e24" />
-        <path d="M46,112 L86,112 L86,116 L45,116 Z" fill="#1e1812" />
+        <path d="M20,105 L46,105 L47,113 L19,113 Z" fill="#3a2e24" />
+        <path d="M17,112 L49,112 L50,116 L16,116 Z" fill="#1e1812" />
+        <path d="M54,105 L80,105 L81,113 L53,113 Z" fill="#3a2e24" />
+        <path d="M51,112 L83,112 L84,116 L50,116 Z" fill="#1e1812" />
       </>}
 
       {/* ══════════════════════════════════════
@@ -154,14 +152,29 @@ export default function PixelCharacter({
       <path d="M48,88 L52,88 L52,96 L48,96 Z" fill={pc.s} opacity="0.45" />
 
       {/* ══════════════════════════════════════
-          3. ARMS — short, slightly angled
+          3. ARMS — chunky sleeves + skin mitten hands
           ══════════════════════════════════════ */}
-      {/* Left arm */}
-      <path d={`M${ph.aL},62 L${ph.tL+2},59 L${ph.tL},82 L${ph.aL+2},80 Z`} fill={C.un} />
-      <path d={`M${ph.aL},62 L${ph.aL+4},64 L${ph.aL+6},82 L${ph.aL+2},80 Z`} fill={C.unS} opacity="0.4" />
-      {/* Right arm */}
-      <path d={`M${ph.tR-2},59 L${ph.aR},62 L${ph.aR-2},80 L${ph.tR},82 Z`} fill={C.un} />
-      <path d={`M${ph.aR-4},64 L${ph.aR},62 L${ph.aR-2},80 L${ph.aR-6},82 Z`} fill={C.unS} opacity="0.4" />
+      {/* ── Left arm ── */}
+      {/* Sleeve */}
+      <path d={`M${ph.aL},61 L${ph.tL+1},60 L${ph.tL},75 L${ph.aL-1},76 Z`} fill={C.un} />
+      {/* Sleeve shadow facet (inner) */}
+      <path d={`M${ph.tL-4},60 L${ph.tL+1},60 L${ph.tL},75 L${ph.tL-5},75 Z`} fill={C.unS} opacity="0.42" />
+      {/* Sleeve cuff line */}
+      <line x1={ph.aL-1} y1="74" x2={ph.tL} y2="74" stroke={C.unS} strokeWidth="0.8" opacity="0.6" />
+      {/* Hand — mitten */}
+      <ellipse cx={ph.aL+2} cy="79" rx="5" ry="5.5" fill={C.sk} />
+      {/* Hand shadow facet */}
+      <path d={`M${ph.aL+2},74 A5,5.5 0 0 1 ${ph.aL+7},79 A5,5.5 0 0 1 ${ph.aL+2},84.5 Z`} fill={C.skSh} opacity="0.3" />
+      {/* Thumb bump */}
+      <circle cx={ph.aL+6} cy="77" r="1.8" fill={C.sk} />
+
+      {/* ── Right arm ── */}
+      <path d={`M${ph.tR-1},60 L${ph.aR},61 L${ph.aR+1},76 L${ph.tR},75 Z`} fill={C.un} />
+      <path d={`M${ph.tR-1},60 L${ph.tR+4},60 L${ph.tR+5},75 L${ph.tR},75 Z`} fill={C.unS} opacity="0.42" />
+      <line x1={ph.tR} y1="74" x2={ph.aR+1} y2="74" stroke={C.unS} strokeWidth="0.8" opacity="0.6" />
+      <ellipse cx={ph.aR-2} cy="79" rx="5" ry="5.5" fill={C.sk} />
+      <path d={`M${ph.aR-2},74 A5,5.5 0 0 0 ${ph.aR-7},79 A5,5.5 0 0 0 ${ph.aR-2},84.5 Z`} fill={C.skSh} opacity="0.3" />
+      <circle cx={ph.aR-6} cy="77" r="1.8" fill={C.sk} />
 
       {/* ══════════════════════════════════════
           4. TORSO — V-taper, low-poly facets
@@ -347,21 +360,24 @@ export default function PixelCharacter({
           ══════════════════════════════════════ */}
       {hg === 'beret' && (
         <g>
-          {/* Crown — asymmetric, drapes right */}
-          <path d="M22,20 C20,6 34,2 50,3 C66,2 80,6 78,18 C78,24 68,28 56,26 C52,28 40,26 32,22 Z"
+          {/* Crown — larger, sits over the whole skull, drapes right */}
+          <path d="M13,23 C11,3 34,-1 51,0 C70,-1 88,4 86,19 C86,28 70,33 54,31 C47,33 33,30 24,25 Z"
             fill="#3d5c2a" />
-          {/* Right drape fold */}
-          <path d="M56,24 C66,26 74,30 78,36 C76,38 72,36 70,32 C67,28 62,26 56,24 Z"
+          {/* Crown top highlight */}
+          <path d="M30,6 C40,2 56,2 66,5 C58,8 42,8 32,9 Z" fill="#4a6f33" opacity="0.5" />
+          {/* Right drape fold (overhangs ear) */}
+          <path d="M54,28 C68,30 79,34 85,42 C81,44 75,40 71,35 C66,30 60,29 54,28 Z"
             fill="#2a4018" />
-          {/* Under-brim shadow */}
-          <path d="M32,22 C40,26 52,28 56,26 C68,28 78,24 78,18 C76,22 68,24 56,22 C50,23 40,22 32,21 Z"
-            fill="#000" opacity="0.12" />
-          <line x1="32" y1="21" x2="40" y2="22" stroke="#2a4018" strokeWidth="1.5" />
-          {/* Badge left */}
-          <circle cx="36" cy="17" r="5.5" fill="#c8a040" />
-          <circle cx="36" cy="17" r="3.5" fill="#e8c060" />
-          <path d="M34.5,17 L36,14.5 L37.5,17 L36,19.5 Z" fill="#c8a040" />
-          <circle cx="36" cy="17" r="1.1" fill="#e8c060" opacity="0.65" />
+          {/* Under-brim shadow line */}
+          <path d="M24,25 C33,30 47,33 54,31 C70,33 86,28 86,19 C83,24 70,26 54,24 C46,25 33,24 24,23 Z"
+            fill="#000" opacity="0.13" />
+          {/* Headband */}
+          <line x1="24" y1="24" x2="36" y2="27" stroke="#2a4018" strokeWidth="2" />
+          {/* Badge — bigger, left */}
+          <circle cx="33" cy="16" r="7" fill="#c8a040" />
+          <circle cx="33" cy="16" r="4.5" fill="#e8c060" />
+          <path d="M31,16 L33,12.5 L35,16 L33,19.5 Z" fill="#c8a040" />
+          <circle cx="33" cy="16" r="1.4" fill="#fff" opacity="0.6" />
         </g>
       )}
 
@@ -394,6 +410,8 @@ export default function PixelCharacter({
           <rect x="34" y="22" width="32" height="3" rx="0" fill="#2a4018" opacity="0.5" />
         </g>
       )}
+
+      </g>{/* end bobbing group */}
 
       {/* ══════════════════════════════════════
           13. UI OVERLAY — level bar
