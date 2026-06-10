@@ -6,9 +6,18 @@ import GymLogger from '../components/GymLogger';
 import PlateDisplay from '../components/PlateDisplay';
 import MissedModal from '../components/MissedModal';
 import ShareWorkout from '../components/ShareWorkout';
+import FileImport from '../components/FileImport';
+import { fmtTime } from '../components/WheelPicker';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
 const SLOT_LABEL = { am: 'Morning', pm: 'Evening' };
+
+// Stat line from real imported activity data
+function actualStatLine(discipline, a) {
+  const km = (a.distanceM / 1000).toFixed(2);
+  if (discipline === 'swim') return `${Math.round(a.distanceM)} m · ${fmtTime(a.durationS)} · ${fmtTime(a.paceSecPerKm / 10)}/100m`;
+  return `${km} km · ${fmtTime(a.durationS)} · ${fmtTime(a.paceSecPerKm)}/km`;
+}
 
 // Build a one-line stat summary per discipline for the share card
 function statLineFor(workout) {
@@ -36,12 +45,13 @@ export default function SessionDetail() {
   const log = logs.find(l => l.sessionId === sessionId);
   const status = log?.status || session.status;
 
-  const markDone = (gymData) => {
+  const markDone = (gymData, actual) => {
     storage.addLog({
       sessionId,
       status: 'done',
       completedAt: new Date().toISOString(),
       ...(gymData ? { gymData } : {}),
+      ...(actual ? { actual } : {}),
     });
     const { char } = charStore.addXP(session.discipline);
     const rank = rankFor(char.level);
@@ -50,7 +60,7 @@ export default function SessionDetail() {
       discipline: session.discipline,
       emoji: DISC_EMOJI[session.discipline] || '🎖️',
       title: session.workout?.label || session.workout?.focus || 'Session',
-      statLine: statLineFor(session.workout),
+      statLine: actual ? actualStatLine(session.discipline, actual) : statLineFor(session.workout),
       sub: `Week ${session.week}${phase ? ' · ' + phase : ''}`,
       date: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
       level: char.level,
@@ -205,13 +215,26 @@ export default function SessionDetail() {
 
       {/* Actions for non-gym pending sessions */}
       {workout?.type !== 'gym' && status === 'pending' && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowMissed(true)}>
-            Missed / Skip
-          </button>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => markDone()}>
-            Mark Done ✓
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+          {/* Import real activity → logs with actual distance/pace */}
+          <div className="card" style={{ padding: '0.75rem 1rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+              Done this on Strava or your watch? Import the file to log it with your real stats.
+            </div>
+            <FileImport
+              label="Import & log this session"
+              variant={session.discipline === 'swim' ? 'swim' : undefined}
+              onParsed={r => markDone(undefined, r)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowMissed(true)}>
+              Missed / Skip
+            </button>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => markDone()}>
+              Mark Done ✓
+            </button>
+          </div>
         </div>
       )}
 

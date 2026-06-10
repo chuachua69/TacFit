@@ -4,6 +4,15 @@ import { storage } from '../store/storage';
 import { generatePlan } from '../lib/planEngine';
 import { getBarOptions } from '../lib/plateCalc';
 import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
+import FileImport from '../components/FileImport';
+
+// Convert an imported activity into the baseline value for a given field
+function deriveBaseline(key, r) {
+  if (key === 'run2400')  return Math.round(r.paceSecPerKm * 2.4); // 2.4km @ avg pace
+  if (key === 'swim400')  return Math.round(r.paceSecPerKm * 0.4); // 400m @ avg pace
+  if (key === 'ruckPace') return Math.round(r.paceSecPerKm);        // sec/km
+  return r.durationS;
+}
 
 const STEPS = ['basics', 'schedule', 'baselines-lift', 'baselines-cardio', 'review'];
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -325,10 +334,10 @@ export default function Onboarding() {
           </div>
 
           {[
-            { key: 'run2400',  label: '2.4km Run Time',     maxMin: 30 },
-            { key: 'swim400',  label: '400m Swim Time',     maxMin: 25 },
-            { key: 'ruckPace', label: 'Ruck Pace (min/km)', maxMin: 20 },
-          ].map(({ key, label, maxMin }) => (
+            { key: 'run2400',  label: '2.4km Run Time',     maxMin: 30, imp: 'Import run (GPX/TCX)',  variant: undefined },
+            { key: 'swim400',  label: '400m Swim Time',     maxMin: 25, imp: 'Import swim (GPX/TCX)', variant: 'swim' },
+            { key: 'ruckPace', label: 'Ruck Pace (min/km)', maxMin: 20, imp: 'Import ruck (GPX/TCX)', variant: undefined },
+          ].map(({ key, label, maxMin, imp, variant }) => (
             <div key={key} className="card" style={{ padding: '0.75rem 1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="label" style={{ marginBottom: 0 }}>{label}</div>
@@ -341,6 +350,14 @@ export default function Onboarding() {
                 onChange={v => setBaseline(key, v)}
                 maxMin={maxMin}
               />
+              <div style={{ marginTop: 8 }}>
+                <FileImport
+                  label={imp}
+                  variant={variant}
+                  hint="Auto-fills from your Strava/watch file’s average pace"
+                  onParsed={r => setBaseline(key, deriveBaseline(key, r))}
+                />
+              </div>
             </div>
           ))}
 
