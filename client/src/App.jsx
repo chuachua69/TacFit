@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { storage } from './store/storage';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
@@ -27,7 +27,7 @@ function App() {
   })();
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={
           !hasSetup ? <Navigate to="/onboarding" replace /> :
@@ -45,7 +45,7 @@ function App() {
         <Route path="/stats" element={<Stats />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
