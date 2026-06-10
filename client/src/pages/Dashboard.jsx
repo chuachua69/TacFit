@@ -117,21 +117,15 @@ export default function Dashboard() {
           }} />
         </div>
 
-        <PixelCharacter equipped={char.equipped} size={1.8} onClick={() => navigate('/bunk')} />
-
-        {/* XP bar */}
-        <div style={{ width: 140, marginTop: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 3 }}>
-            <span>Lv {char.level}</span>
-            <span>{char.xp} XP</span>
-          </div>
-          <div style={{ height: 4, background: 'var(--border)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ width: `${levelPct}%`, height: '100%', background: 'var(--accent)', borderRadius: 999, transition: 'width 0.5s' }} />
-          </div>
-        </div>
-        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4 }}>
-          tap to customise
-        </div>
+        <PixelCharacter
+          equipped={char.equipped}
+          size={1.8}
+          level={char.level}
+          xp={char.xp}
+          maxXp={LEVEL_XP[char.level + 1] ?? 9999}
+          showUI
+          onClick={() => navigate('/bunk')}
+        />
       </div>
 
       {/* Week progress bar */}
