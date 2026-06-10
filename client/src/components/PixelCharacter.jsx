@@ -1,283 +1,449 @@
-import { ITEMS } from '../store/character';
+/**
+ * PixelCharacter.jsx  —  Vector-minimalist cel-shaded tactical character
+ * ViewBox: 0 0 100 130  |  All layers drawn bottom → top
+ *
+ * Props:
+ *   headgear   'beret'|'helmet'|'boonie'|'none'
+ *   hair       'crew_cut'|'undercut'|'shaved'
+ *   showShades boolean
+ *   showStubble boolean
+ *   physique   'lean'|'athletic'|'jacked'
+ *   showVest   boolean
+ *   pantsColor 'olive'|'tan'|'gray'
+ *   footwear   'boots'|'shoes'|'none'
+ *   size       number  (width = 100*size, height = 130*size)
+ */
 
-// Colour palette
+// ─── PALETTE ────────────────────────────────────────────────────────────────
 const C = {
-  ol:  '#0d0d12',   // outline
-  sk:  '#c8906a',   // skin
-  skd: '#a07050',   // skin shadow
-  sub: '#7a4828',   // stubble
-  eye: '#111111',   // eye
-  shi: '#ffffff',   // eye shine
-  uni: '#4a6035',   // uniform olive
-  und: '#344825',   // uniform shadow
-  ves: '#3d3428',   // vest coyote
-  vsd: '#2a231a',   // vest shadow
-  pou: '#4a4038',   // pouch
-  psd: '#302820',   // pouch shadow
-  blt: '#5a4020',   // belt leather
-  bck: '#c8a040',   // buckle gold
-  pnt: '#2a3822',   // pants
-  pnd: '#1a2818',   // pants shadow
-  bot: '#1a1008',   // boot
-  bsd: '#0e0804',   // boot sole
-  bgr: '#3d5c2a',   // beret green
-  bgs: '#2a4018',   // beret shadow
-  bdg: '#c8a040',   // badge gold
+  // Skin
+  sk:   '#c8906a', skSh: '#9a6848', skDk: '#6e4428',
+  // Eyes / face
+  eye:  '#1a1008', eyeW: '#d4cbb8', eyeS: '#ffffff',
+  brow: '#3a1a08', mouth:'#8a4a2e',
+  stub: '#3c1c08',   // stubble tint
+  // Hair (dark brown)
+  hair: '#2a1a0c', hairM:'#3c2618',
+  // Uniform — olive
+  oli:  '#4a6035', oliS: '#344825',
+  // Tan / gray variants
+  tan:  '#8a7a5a', tanS: '#6a5a3a',
+  gry:  '#585868', gryS: '#3e3e4e',
+  // Tactical vest (coyote brown — NOT black so it reads on dark bg)
+  ves:  '#3e3420', vesS: '#2a2418',
+  pou:  '#302c18', pouE: '#4e4428',
+  // Belt / buckle
+  blt:  '#4a3018', bck:  '#c8a040', bckH:'#e8d060',
+  // Boots — dark olive-brown with rim highlight
+  bot:  '#2a2210', botS: '#1c1a0e', botR: '#4a4030',
+  // Beret
+  bgr:  '#3d5c2a', bgrS: '#2a4018',
+  bdg:  '#c8a040', bdgH:'#e8d060',
+  // Helmet
+  hlm:  '#5c5e58', hlmS: '#3c3e38', hlmE: '#7a7c74',
+  // Shades (tactical glasses — dark teal, NOT black, with rim)
+  shd:  '#162028', shdR: '#4a6878', shdG: '#7aafc8',
 };
 
-// ── HEAD GEAR LAYERS ──────────────────────────────────────────────
+// ─── PHYSIQUE BODY CONFIGS ───────────────────────────────────────────────────
+// sL/sR = shoulder left/right x
+// wL/wR = waist left/right x
+// Each arm is a slanted quad: outer shoulder angles out from torso
+const PHYS = {
+  lean: {
+    sL:22, sR:78, wL:32, wR:68,
+    // torso trapezoid
+    tor:   'M22,46 L78,46 L68,90 L32,90 Z',
+    torSh: 'M55,46 L78,46 L68,90 L59,90 Z',
+    // arms [outer-top, inner-top, inner-bot, outer-bot]
+    aLt:[10,22], aLb:[26,14],
+    aRt:[90,78], aRb:[74,86],
+  },
+  athletic: {
+    sL:16, sR:84, wL:28, wR:72,
+    tor:   'M16,46 L84,46 L72,90 L28,90 Z',
+    torSh: 'M58,46 L84,46 L72,90 L62,90 Z',
+    aLt:[4,18],  aLb:[22,10],
+    aRt:[96,82], aRb:[78,90],
+  },
+  jacked: {
+    sL:10, sR:90, wL:24, wR:76,
+    tor:   'M10,46 L90,46 L76,90 L24,90 Z',
+    torSh: 'M62,46 L90,46 L76,90 L64,90 Z',
+    aLt:[2,12],  aLb:[18,6],
+    aRt:[98,88], aRb:[82,94],
+  },
+};
 
-function BeretGreen() {
-  return (
-    <g>
-      {/* Beret crown — angled, pulled left */}
-      <path d="M14,10 C13,4 19,1 30,2 C41,1 47,5 46,10 C45,13 40,15 33,14 C31,15 26,15 20,13 Z"
-        fill={C.bgr} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      {/* Left drape — fabric folds down toward the ear */}
-      <path d="M19,12 C15,14 12,17 13,22 C15,22 18,18 20,15 Z"
-        fill={C.bgs} stroke={C.ol} strokeWidth="0.7" strokeLinejoin="round" />
-      {/* Under-brim shadow */}
-      <path d="M20,13 C26,15 31,15 33,14 C40,15 45,13 46,10 C42,13 34,15 30,15 C26,15 20,14 19,12 Z"
-        fill="#000" opacity="0.18" />
-      {/* Badge */}
-      <circle cx="22" cy="10" r="3.2" fill={C.bdg} stroke={C.ol} strokeWidth="0.6" />
-      <circle cx="22" cy="10" r="1.9" fill="#e8c870" />
-      <path d="M21,10 L22,7.8 L23,10 L22,12.2 Z" fill={C.bdg} />
-    </g>
-  );
-}
+// pants colour lookup
+const PANTS = {
+  olive: { fill: C.oli,  sh: C.oliS },
+  tan:   { fill: C.tan,  sh: C.tanS },
+  gray:  { fill: C.gry,  sh: C.gryS },
+};
 
-function HelmetMk6() {
-  return (
-    <g>
-      <path d="M16,12 C15,4 20,0 30,0 C40,0 45,4 44,12 L44,20 C44,22 38,24 30,24 C22,24 16,22 16,20 Z"
-        fill="#5e5e5e" stroke={C.ol} strokeWidth="0.8" />
-      <path d="M16,17 L44,17 L44,20 C44,22 38,24 30,24 C22,24 16,22 16,20 Z"
-        fill="#3a3a3a" opacity="0.55" />
-      {/* Rail stubs */}
-      <rect x="14" y="14" width="5" height="3" rx="0.8" fill="#444" stroke="#666" strokeWidth="0.4" />
-      <rect x="41" y="14" width="5" height="3" rx="0.8" fill="#444" stroke="#666" strokeWidth="0.4" />
-    </g>
-  );
-}
+// ─── COMPONENT ───────────────────────────────────────────────────────────────
+export default function PixelCharacter({
+  // new API
+  headgear:   _hg,
+  hair        = 'crew_cut',
+  showShades: _ss,
+  showStubble = false,
+  physique    = 'athletic',
+  showVest:   _sv,
+  pantsColor  = 'olive',
+  footwear    = 'boots',
+  // legacy compat
+  equipped    = {},
+  size        = 1,
+  onClick,
+}) {
+  // map legacy equipped → new props when new props are absent
+  const HEAD_MAP = {
+    beret_green:'beret', helmet_mk6:'helmet',
+    boonie_hat:'boonie', ops_helmet:'helmet',
+  };
+  const headgear  = _hg  ?? HEAD_MAP[equipped.head]  ?? 'none';
+  const showShades= _ss  ?? (equipped.face==='visor_amber'||equipped.face==='nvg') ?? false;
+  const showVest  = _sv  ?? (equipped.body != null && equipped.body !== undefined) ?? true;
 
-function BoonieHat() {
-  return (
-    <g>
-      {/* Crown */}
-      <path d="M18,12 C17,5 21,1 30,1 C39,1 43,5 42,12 L41,18 C41,19 36,21 30,21 C24,21 19,19 19,18 Z"
-        fill={C.bgr} stroke={C.ol} strokeWidth="0.8" />
-      {/* Wide floppy brim */}
-      <path d="M9,17 C8,13 13,12 19,14 C24,17 36,17 41,14 C47,12 52,13 51,17 C50,21 46,22 41,20 C36,22 24,22 19,20 C13,22 8,21 9,17 Z"
-        fill={C.bgs} stroke={C.ol} strokeWidth="0.8" />
-    </g>
-  );
-}
+  const ph  = PHYS[physique] || PHYS.athletic;
+  const pc  = PANTS[pantsColor] || PANTS.olive;
+  const uni = C.oli;   // shirt is always olive under vest
+  const uSh = C.oliS;
 
-function OpsHelmet() {
-  return (
-    <g>
-      {/* FAST shell */}
-      <path d="M15,12 C14,3 19,0 30,0 C41,0 46,3 45,12 L46,20 C46,22 40,25 30,25 C20,25 14,22 14,20 Z"
-        fill="#242424" stroke={C.ol} strokeWidth="0.8" />
-      {/* Side rail cutouts */}
-      <path d="M14,14 L16,14 L17,21 L15,21 Z" fill="#333" />
-      <path d="M46,14 L44,14 L43,21 L45,21 Z" fill="#333" />
-      {/* Shroud mount */}
-      <rect x="25" y="2" width="10" height="5" rx="1.2" fill="#303030" stroke="#555" strokeWidth="0.4" />
-      {/* Retention strap line */}
-      <path d="M15,20 C20,22 40,22 45,20" fill="none" stroke="#555" strokeWidth="0.9" opacity="0.6" />
-    </g>
-  );
-}
+  // arm path helper
+  const armPath = (ot, it, ib, ob) =>
+    `M${ot},52 L${it},46 L${ib},96 L${ob},96 Z`;
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────
-
-export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
-  const equippedHead = equipped.head || 'beret_green';
-  const equippedFace = equipped.face || null;
-  const equippedBody = equipped.body || 'vest_basic';
-
-  // Vest colour by item
-  const vestFill =
-    equippedBody === 'vest_plate'    ? '#48485a' :
-    equippedBody === 'vest_arid'     ? '#8a7a5a' :
-    equippedBody === 'vest_multicam' ? '#565840' : C.ves;
-  const vestShade =
-    equippedBody === 'vest_arid'     ? '#6a5a3a' :
-    equippedBody === 'vest_multicam' ? '#3a3c28' : C.vsd;
-
-  const svgW = 60 * size;
-  const svgH = 54 * size;
+  // vest coords derived from physique
+  const vL = ph.sL + 6, vR = ph.sR - 6;
 
   return (
     <svg
-      width={svgW} height={svgH}
-      viewBox="0 0 60 54"
-      style={{ imageRendering: 'auto', cursor: onClick ? 'pointer' : 'default', overflow: 'visible' }}
+      width={100 * size} height={130 * size}
+      viewBox="0 0 100 130"
+      style={{ imageRendering:'auto', cursor: onClick ? 'pointer':'default', overflow:'visible' }}
       onClick={onClick}
     >
-      {/* ── BOOTS ── */}
-      {/* Left boot — toe extends forward (left) */}
-      <path d="M13,49 L14,47 L25,47 L26,50 L26,54 L12,54 C11,54 11,52 13,49 Z"
-        fill={C.bot} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <rect x="11" y="51" width="15" height="2.5" rx="0.6" fill={C.bsd} />
-      {/* Right boot */}
-      <path d="M34,47 L45,47 L47,49 C49,52 49,54 48,54 L34,54 L34,50 Z"
-        fill={C.bot} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <rect x="34" y="51" width="15" height="2.5" rx="0.6" fill={C.bsd} />
 
-      {/* ── LEGS — slight A-stance ── */}
-      {/* Left leg */}
-      <path d="M17,38 L26,38 L26,47 L14,47 Z"
-        fill={C.pnt} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <path d="M22,38 L26,38 L26,47 L22,47 Z" fill={C.pnd} opacity="0.4" />
+      {/* ══════════════════════════════════════════
+          1. FOOTWEAR
+          ══════════════════════════════════════════ */}
+      {footwear === 'boots' && <>
+        {/* ── Left boot ── */}
+        {/* Upper — angular, toe kicks forward/left */}
+        <path d="M14,114 L38,114 L38,126 L12,126 L12,118 Z"
+          fill={C.bot} />
+        {/* Toe cap — darker facet */}
+        <path d="M12,118 L12,126 L38,126 L38,122 L20,122 Z"
+          fill="#1a1608" />
+        {/* Sole block */}
+        <rect x="10" y="124" width="30" height="5" rx="1" fill={C.botS} />
+        {/* Rim highlight — 1px line so boot reads against black bg */}
+        <polyline points="14,114 38,114 38,118" fill="none" stroke={C.botR} strokeWidth="1.2" strokeLinejoin="round" />
+        <line x1="14" y1="114" x2="12" y2="118" stroke={C.botR} strokeWidth="1.2" />
+        {/* Lace rows */}
+        <line x1="18" y1="115" x2="34" y2="115" stroke={C.pouE} strokeWidth="0.6" opacity="0.7" />
+        <line x1="17" y1="118" x2="35" y2="118" stroke={C.pouE} strokeWidth="0.6" opacity="0.7" />
+        <line x1="16" y1="121" x2="36" y2="121" stroke={C.pouE} strokeWidth="0.6" opacity="0.7" />
+
+        {/* ── Right boot ── */}
+        <path d="M62,114 L86,114 L88,118 L88,126 L62,126 Z"
+          fill={C.bot} />
+        <path d="M62,122 L62,126 L88,126 L88,122 L80,122 Z"
+          fill="#1a1608" />
+        <rect x="60" y="124" width="30" height="5" rx="1" fill={C.botS} />
+        <polyline points="62,114 86,114 88,118" fill="none" stroke={C.botR} strokeWidth="1.2" strokeLinejoin="round" />
+        <line x1="62" y1="114" x2="62" y2="118" stroke={C.botR} strokeWidth="1.2" />
+        <line x1="66" y1="115" x2="82" y2="115" stroke={C.pouE} strokeWidth="0.6" opacity="0.7" />
+        <line x1="65" y1="118" x2="83" y2="118" stroke={C.pouE} strokeWidth="0.6" opacity="0.7" />
+        <line x1="64" y1="121" x2="84" y2="121" stroke={C.pouE} strokeWidth="0.6" opacity="0.7" />
+      </>}
+
+      {footwear === 'shoes' && <>
+        <path d="M16,116 L38,116 L40,126 L12,126 Z" fill="#342e28" />
+        <rect x="10" y="124" width="32" height="4" rx="1" fill="#201c18" />
+        <line x1="16" y1="116" x2="38" y2="116" stroke="#5a5048" strokeWidth="1" />
+        <path d="M62,116 L84,116 L88,126 L60,126 Z" fill="#342e28" />
+        <rect x="58" y="124" width="32" height="4" rx="1" fill="#201c18" />
+        <line x1="62" y1="116" x2="84" y2="116" stroke="#5a5048" strokeWidth="1" />
+      </>}
+
+      {/* ══════════════════════════════════════════
+          2. LEGS — A-stance, feet spread
+          ══════════════════════════════════════════ */}
+      {/* Left leg — tapers outward going down */}
+      <path d={`M${ph.wL},98 L${ph.wL+12},98 L${ph.wL+8},${footwear==='boots'?114:116} L${ph.wL-8},${footwear==='boots'?114:116} Z`}
+        fill={pc.fill} />
+      {/* Shadow strip (inner right edge) */}
+      <path d={`M${ph.wL+8},98 L${ph.wL+12},98 L${ph.wL+8},${footwear==='boots'?114:116} L${ph.wL+5},${footwear==='boots'?114:116} Z`}
+        fill={pc.sh} opacity="0.7" />
+
       {/* Right leg */}
-      <path d="M34,38 L43,38 L46,47 L34,47 Z"
-        fill={C.pnt} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <path d="M34,38 L38,38 L36,47 L34,47 Z" fill={C.pnd} opacity="0.4" />
+      <path d={`M${ph.wR-12},98 L${ph.wR},98 L${ph.wR+8},${footwear==='boots'?114:116} L${ph.wR-8},${footwear==='boots'?114:116} Z`}
+        fill={pc.fill} />
+      <path d={`M${ph.wR-12},98 L${ph.wR-8},98 L${ph.wR-8},${footwear==='boots'?114:116} L${ph.wR-11},${footwear==='boots'?114:116} Z`}
+        fill={pc.sh} opacity="0.7" />
 
-      {/* ── ARMS ── */}
-      {/* Left arm — slight outward angle */}
-      <path d="M13,22 C10,23 9,31 10,40 L17,41 L18,22 Z"
-        fill={C.uni} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <path d="M13,22 C11,23 10,31 11,40 L13,40 L15,22 Z" fill={C.und} opacity="0.35" />
+      {/* Crotch gusset — connects legs, creates the stance gap */}
+      <path d={`M${ph.wL},98 L${ph.wR},98 L${ph.wR-4},106 L${ph.wL+4},106 Z`}
+        fill={pc.fill} />
+      <path d={`M${ph.wL+(ph.wR-ph.wL)*0.55},98 L${ph.wR},98 L${ph.wR-4},106 L${ph.wL+(ph.wR-ph.wL)*0.6},106 Z`}
+        fill={pc.sh} opacity="0.5" />
+
+      {/* ══════════════════════════════════════════
+          3. ARMS
+          ══════════════════════════════════════════ */}
+      {/* Left arm — slanted quad, outer shoulder angles away */}
+      <path d={armPath(ph.aLt[0], ph.aLt[1], ph.aLb[0], ph.aLb[1])}
+        fill={uni} />
+      {/* Arm outer-edge shadow */}
+      <path d={`M${ph.aLt[0]},52 L${ph.aLt[0]+4},56 L${ph.aLb[1]+4},96 L${ph.aLb[1]},96 Z`}
+        fill={uSh} opacity="0.5" />
+
       {/* Right arm */}
-      <path d="M47,22 C50,23 51,31 50,40 L43,41 L42,22 Z"
-        fill={C.uni} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <path d="M45,22 L47,22 C49,23 50,31 49,40 L47,40 Z" fill={C.und} opacity="0.35" />
+      <path d={armPath(ph.aRt[1], ph.aRt[0], ph.aRb[0], ph.aRb[1])}
+        fill={uni} />
+      <path d={`M${ph.aRt[0]},52 L${ph.aRt[0]-4},56 L${ph.aRb[1]-4},96 L${ph.aRb[1]},96 Z`}
+        fill={uSh} opacity="0.5" />
 
-      {/* ── BASE TORSO (uniform under vest) ── */}
-      {/* V-taper: wider at shoulders, narrows to belt */}
-      <path d="M14,21 C12,22 11,30 13,38 L47,38 C49,30 48,22 46,21 L37,19 L23,19 Z"
-        fill={C.uni} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      <path d="M40,19 L46,21 C48,28 47,36 47,38 L42,38 L41,21 Z" fill={C.und} opacity="0.3" />
+      {/* ══════════════════════════════════════════
+          4. BASE TORSO — V-taper trapezoid
+          ══════════════════════════════════════════ */}
+      <path d={ph.tor} fill={uni} />
+      {/* Right-side cel-shadow wedge */}
+      <path d={ph.torSh} fill={uSh} opacity="0.45" />
 
-      {/* ── BELT ── */}
-      <rect x="15" y="35" width="30" height="5" rx="1.5"
-        fill={C.blt} stroke={C.ol} strokeWidth="0.7" />
-      {/* Buckle */}
-      <rect x="27" y="35.5" width="6" height="4" rx="1" fill={C.bck} />
-      <rect x="28.2" y="36.5" width="3.6" height="2" rx="0.5" fill="#f0d070" />
+      {/* ══════════════════════════════════════════
+          5. BELT
+          ══════════════════════════════════════════ */}
+      <rect x={ph.wL} y="87" width={ph.wR - ph.wL} height="6" rx="1" fill={C.blt} />
+      {/* Buckle — centered */}
+      <rect x="45" y="87.5" width="10" height="5" rx="1" fill={C.bck} />
+      <rect x="46.5" y="88.5" width="7" height="3" rx="0.5" fill={C.bckH} />
 
-      {/* ── TACTICAL VEST ── */}
-      {/* Main panel — slightly narrower than torso to show uniform peek */}
-      <path d="M20,21 L40,21 L43,35 L17,35 Z"
-        fill={vestFill} stroke={C.ol} strokeWidth="0.8" strokeLinejoin="round" />
-      {/* Right-side shadow for depth */}
-      <path d="M37,21 L40,21 L43,35 L39,35 Z" fill={vestShade} opacity="0.45" />
-      {/* Shoulder straps — diagonal from chest to shoulder */}
-      <path d="M22,21 L25,19 L29,20 L29,24 L21,25 Z"
-        fill={vestFill} stroke={C.ol} strokeWidth="0.6" strokeLinejoin="round" />
-      <path d="M38,21 L35,19 L31,20 L31,24 L39,25 Z"
-        fill={vestFill} stroke={C.ol} strokeWidth="0.6" strokeLinejoin="round" />
-      {/* Centre cummerbund strap */}
-      <rect x="28" y="23.5" width="4" height="2" rx="0.6"
-        fill={C.blt} stroke={C.ol} strokeWidth="0.4" />
-      {/* Three mag pouches */}
-      <rect x="20.5" y="25.5" width="6" height="8" rx="1.2"
-        fill={C.pou} stroke={C.ol} strokeWidth="0.55" />
-      <rect x="27"   y="25.5" width="6" height="8" rx="1.2"
-        fill={C.pou} stroke={C.ol} strokeWidth="0.55" />
-      <rect x="33.5" y="25.5" width="6" height="8" rx="1.2"
-        fill={C.pou} stroke={C.ol} strokeWidth="0.55" />
-      {/* Pouch bottom shadow */}
-      <rect x="20.5" y="30.5" width="6" height="3" rx="0.6" fill={C.psd} opacity="0.5" />
-      <rect x="27"   y="30.5" width="6" height="3" rx="0.6" fill={C.psd} opacity="0.5" />
-      <rect x="33.5" y="30.5" width="6" height="3" rx="0.6" fill={C.psd} opacity="0.5" />
+      {/* ══════════════════════════════════════════
+          6. TACTICAL VEST (conditional)
+          ══════════════════════════════════════════ */}
+      {showVest && <>
+        {/* Main plate carrier panel */}
+        <path d={`M${vL},48 L${vR},48 L${vR-2},87 L${vL+2},87 Z`}
+          fill={C.ves} />
+        {/* Right cel-shadow */}
+        <path d={`M${vL+(vR-vL)*0.5},48 L${vR},48 L${vR-2},87 L${vL+(vR-vL)*0.52},87 Z`}
+          fill={C.vesS} opacity="0.5" />
 
-      {/* ── NECK ── */}
-      <rect x="26" y="17" width="8" height="5" rx="2"
-        fill={C.sk} stroke={C.ol} strokeWidth="0.8" />
-      <rect x="28" y="17" width="4" height="5" rx="1" fill={C.skd} opacity="0.25" />
+        {/* Shoulder strap — left */}
+        <path d={`M${vL},50 L${vL+10},46 L${vL+12},54 L${vL},58 Z`}
+          fill={C.ves} />
+        {/* Shoulder strap — right */}
+        <path d={`M${vR},50 L${vR-10},46 L${vR-12},54 L${vR},58 Z`}
+          fill={C.ves} />
 
-      {/* ── HEAD ── */}
-      {/* Main head — strong angular jaw, slightly wider at cheeks */}
-      <path d="M18,7 C17,7 16,9 16,11 L16,24 C16,29 22,33 30,33 C38,33 44,29 44,24 L44,11 C44,9 43,7 42,7 Z"
-        fill={C.sk} stroke={C.ol} strokeWidth="1" strokeLinejoin="round" />
-      {/* Cheek shadow — left */}
-      <path d="M16,19 C16,25 18,30 22,32 C19,28 18,24 18,20 Z"
-        fill={C.skd} opacity="0.28" />
-      {/* Cheek shadow — right */}
-      <path d="M44,19 C44,25 42,30 38,32 C41,28 42,24 42,20 Z"
-        fill={C.skd} opacity="0.28" />
-      {/* Ears */}
-      <ellipse cx="16" cy="18" rx="2.4" ry="3.4"
-        fill={C.sk} stroke={C.ol} strokeWidth="0.8" />
-      <ellipse cx="44" cy="18" rx="2.4" ry="3.4"
-        fill={C.sk} stroke={C.ol} strokeWidth="0.8" />
+        {/* Cummerbund chest strap */}
+        <rect x={vL+12} y="61" width={vR-vL-24} height="3" rx="1" fill={C.blt} />
 
-      {/* ── FACE ── */}
-      {equippedFace === 'balaclava' ? (
+        {/* ── Mag pouches × 3 ── */}
+        {/* Left pouch */}
+        <rect x={vL+4} y="65" width="12" height="16" rx="1.5"
+          fill={C.pou} stroke={C.pouE} strokeWidth="0.8" />
+        <rect x={vL+4} y="77" width="12" height="4" rx="0.5"
+          fill="#000" opacity="0.25" />
+        {/* Centre pouch */}
+        <rect x="44" y="65" width="12" height="16" rx="1.5"
+          fill={C.pou} stroke={C.pouE} strokeWidth="0.8" />
+        <rect x="44" y="77" width="12" height="4" rx="0.5"
+          fill="#000" opacity="0.25" />
+        {/* Right pouch */}
+        <rect x={vR-16} y="65" width="12" height="16" rx="1.5"
+          fill={C.pou} stroke={C.pouE} strokeWidth="0.8" />
+        <rect x={vR-16} y="77" width="12" height="4" rx="0.5"
+          fill="#000" opacity="0.25" />
+
+        {/* MOLLE dot-row on each pouch */}
+        {[vL+6, vL+9, vL+12].map((x,i)=>(
+          <circle key={`pl${i}`} cx={x} cy="82" r="1" fill={C.pouE} />
+        ))}
+        {[46,49,52].map((x,i)=>(
+          <circle key={`pc${i}`} cx={x} cy="82" r="1" fill={C.pouE} />
+        ))}
+        {[vR-14,vR-11,vR-8].map((x,i)=>(
+          <circle key={`pr${i}`} cx={x} cy="82" r="1" fill={C.pouE} />
+        ))}
+      </>}
+
+      {/* ══════════════════════════════════════════
+          7. NECK
+          ══════════════════════════════════════════ */}
+      <rect x="43" y="36" width="14" height="11" rx="2" fill={C.sk} />
+      {/* Right-side neck shadow */}
+      <rect x="50" y="36" width="7" height="11" rx="1" fill={C.skSh} opacity="0.4" />
+      {/* Collar line hint */}
+      <path d={`M${vL},50 L43,44 L43,38 L57,38 L57,44 L${vR},50`}
+        fill="none" stroke={uSh} strokeWidth="0.9" opacity={showVest ? 0 : 0.5} />
+
+      {/* ══════════════════════════════════════════
+          8. HEAD — angular chiseled jawline
+          ══════════════════════════════════════════ */}
+      {/* Main head: temples wider, jaw tapers in sharply */}
+      <path d="M37,8 L63,8 L67,12 L69,24 L64,36 L36,36 L31,24 L33,12 Z"
+        fill={C.sk} />
+      {/* Right-side cel-shadow: covers ~35% of face */}
+      <path d="M58,8 L63,8 L67,12 L69,24 L64,36 L58,36 Z"
+        fill={C.skSh} opacity="0.45" />
+      {/* Chin/jaw shadow — adds depth under the jawline */}
+      <path d="M36,30 L64,30 L64,36 L36,36 Z"
+        fill={C.skDk} opacity="0.3" />
+      {/* Ears — small angular quads */}
+      <path d="M31,20 L27,22 L27,29 L32,27 Z" fill={C.sk} />
+      <path d="M69,20 L73,22 L73,29 L68,27 Z" fill={C.sk} />
+      {/* Ear shadow inner */}
+      <path d="M29,23 L27,25 L28,28 L31,26 Z" fill={C.skSh} opacity="0.5" />
+      <path d="M71,23 L73,25 L72,28 L69,26 Z" fill={C.skSh} opacity="0.5" />
+
+      {/* ══════════════════════════════════════════
+          9. FACE DETAILS
+          ══════════════════════════════════════════ */}
+      {/* Brow ridges — slanted angular shapes */}
+      <path d="M38,17 L48,15.5 L49,18 L38,19 Z" fill={C.brow} opacity="0.75" />
+      <path d="M51,15.5 L61,17 L62,19 L51,18 Z" fill={C.brow} opacity="0.75" />
+
+      {/* ── EYES or SHADES ── */}
+      {showShades ? (
+        /* Tactical angular glasses — wrap-around style */
         <g>
-          <path d="M17,11 L43,11 L44,28 C44,31 38,33 30,33 C22,33 16,31 16,28 Z"
-            fill="#252525" opacity="0.92" />
-          {/* Eye slit */}
-          <rect x="21" y="17" width="18" height="4" rx="1" fill={C.sk} />
-          {/* Mouth slit */}
-          <rect x="25" y="27" width="10" height="3" rx="0.8" fill="#181818" />
+          {/* Left lens — slightly trapezoidal */}
+          <path d="M36,19 L49,18 L50,25 L36,26 Z" fill={C.shd} />
+          {/* Right lens */}
+          <path d="M51,18 L64,19 L64,26 L51,25 Z" fill={C.shd} />
+          {/* Bridge */}
+          <rect x="49" y="20.5" width="2" height="2.5" rx="0.5" fill="#0e1820" />
+          {/* Rim highlights — crucial for reading against dark face */}
+          <line x1="36" y1="19" x2="49" y2="18" stroke={C.shdR} strokeWidth="0.9" />
+          <line x1="36" y1="19" x2="36" y2="26" stroke={C.shdR} strokeWidth="0.7" />
+          <line x1="51" y1="18" x2="64" y2="19" stroke={C.shdR} strokeWidth="0.9" />
+          <line x1="64" y1="19" x2="64" y2="26" stroke={C.shdR} strokeWidth="0.7" />
+          <line x1="36" y1="26" x2="50" y2="25" stroke={C.shdR} strokeWidth="0.5" opacity="0.5" />
+          <line x1="51" y1="25" x2="64" y2="26" stroke={C.shdR} strokeWidth="0.5" opacity="0.5" />
+          {/* Glare streaks */}
+          <path d="M38,19.5 L44,19 L45,21 L39,21.5 Z" fill={C.shdG} opacity="0.2" />
+          <path d="M53,18.5 L59,19 L60,21 L54,20.5 Z" fill={C.shdG} opacity="0.2" />
         </g>
       ) : (
+        /* Default eyes — narrow tactical squint */
         <g>
-          {/* 5-o'clock shadow — lower third of face */}
-          <path d="M18,23 C18,30 22,33 30,33 C38,33 42,30 42,23 C39,26 35,28 30,28 C25,28 21,26 18,23 Z"
-            fill={C.sub} opacity="0.28" />
-
-          {/* Eyes / face overlay */}
-          {equippedFace === 'visor_amber' ? (
-            /* Wraparound ballistic shades */
-            <g>
-              <path d="M16,15 L44,15 L44,21 C44,23 38,25 30,25 C22,25 16,23 16,21 Z"
-                fill="#b86a10" opacity="0.92" stroke={C.ol} strokeWidth="0.6" strokeLinejoin="round" />
-              {/* Glare strip */}
-              <path d="M18,15 L42,15 L42,17 C42,17 38,18 30,18 C22,18 18,17 18,17 Z"
-                fill="#fff" opacity="0.2" />
-            </g>
-          ) : equippedFace === 'nvg' ? (
-            <g>
-              <rect x="19" y="14" width="9" height="6" rx="3"
-                fill="#141414" stroke={C.ol} strokeWidth="0.7" />
-              <rect x="32" y="14" width="9" height="6" rx="3"
-                fill="#141414" stroke={C.ol} strokeWidth="0.7" />
-              <circle cx="23.5" cy="17" r="2.2" fill="#1e4a1a" />
-              <circle cx="36.5" cy="17" r="2.2" fill="#1e4a1a" />
-              <circle cx="24" cy="16.5" r="0.7" fill="#4aaa40" opacity="0.6" />
-              <circle cx="37" cy="16.5" r="0.7" fill="#4aaa40" opacity="0.6" />
-              {/* Bridge */}
-              <rect x="28" y="16" width="4" height="2" rx="0.5" fill="#222" />
-            </g>
-          ) : (
-            /* Default — tactical squint, narrow slitted eyes */
-            <g>
-              {/* Brow ridge shadow */}
-              <path d="M20,13 C22,11 28,11 30,13" fill="none" stroke={C.skd} strokeWidth="0.8" opacity="0.5" />
-              <path d="M30,13 C32,11 38,11 40,13" fill="none" stroke={C.skd} strokeWidth="0.8" opacity="0.5" />
-              {/* Left eye — leaf/almond shape */}
-              <path d="M20,17 C22,14.2 28,14.2 30,17 C28,18.5 22,18.5 20,17 Z"
-                fill={C.eye} />
-              {/* Right eye */}
-              <path d="M30,17 C32,14.2 38,14.2 40,17 C38,18.5 32,18.5 30,17 Z"
-                fill={C.eye} />
-              {/* Iris highlight */}
-              <circle cx="27" cy="16" r="0.9" fill={C.shi} opacity="0.55" />
-              <circle cx="37" cy="16" r="0.9" fill={C.shi} opacity="0.55" />
-            </g>
-          )}
-
-          {/* Nose — subtle bridge hint */}
-          <path d="M29,21 C28,24 29,26 30,26 C31,26 32,24 31,21"
-            fill="none" stroke={C.skd} strokeWidth="0.7" opacity="0.45" />
-          {/* Mouth — stern, slightly downturned */}
-          <path d="M24,29 C26,27.5 34,27.5 36,29"
-            fill="none" stroke={C.sub} strokeWidth="1" opacity="0.55" />
+          {/* Left eye socket + iris */}
+          <path d="M39,19 L48,18.5 L49,23 L39,23.5 Z" fill={C.eyeW} />
+          <ellipse cx="44" cy="21" rx="3" ry="2.2" fill={C.eye} />
+          <circle cx="45" cy="20" r="0.9" fill={C.eyeS} opacity="0.6" />
+          {/* Right eye */}
+          <path d="M51,18.5 L60,19 L61,23.5 L51,23 Z" fill={C.eyeW} />
+          <ellipse cx="56" cy="21" rx="3" ry="2.2" fill={C.eye} />
+          <circle cx="57" cy="20" r="0.9" fill={C.eyeS} opacity="0.6" />
         </g>
       )}
 
-      {/* ── HEAD GEAR (topmost layer) ── */}
-      {equippedHead === 'beret_green' && <BeretGreen />}
-      {equippedHead === 'helmet_mk6'  && <HelmetMk6 />}
-      {equippedHead === 'boonie_hat'  && <BoonieHat />}
-      {equippedHead === 'ops_helmet'  && <OpsHelmet />}
+      {/* Nose — angular V hint */}
+      <path d="M49,24 L47,29 L50,31 L53,29 L51,24"
+        fill="none" stroke={C.skSh} strokeWidth="1" strokeLinejoin="round" opacity="0.55" />
+
+      {/* Mouth — thin determined line, slight downset */}
+      <path d="M42,33 L47,31.5 L53,31.5 L58,33"
+        fill="none" stroke={C.mouth} strokeWidth="1.3" strokeLinecap="round" />
+
+      {/* Stubble mask — semi-transparent dark tint on lower jaw */}
+      {showStubble && (
+        <path d="M35,27 L65,27 L64,36 L36,36 Z"
+          fill={C.stub} opacity="0.2" />
+      )}
+
+      {/* ══════════════════════════════════════════
+          10. HAIR (shown when not fully covered)
+          ══════════════════════════════════════════ */}
+      {headgear !== 'helmet' && hair !== 'shaved' && (
+        hair === 'undercut' ? (
+          /* Undercut — fuller volume on top, hard side-fade line */
+          <g>
+            <path d="M34,4 L66,4 L68,11 L32,11 Z" fill={C.hair} />
+            {/* Side fade hard line */}
+            <path d="M32,11 L34,4 L37,8 L33,12 Z" fill={C.hairM} />
+            <path d="M68,11 L66,4 L63,8 L67,12 Z" fill={C.hairM} />
+          </g>
+        ) : (
+          /* Crew-cut — tight flat top */
+          <path d="M37,8 L63,8 L66,11 L34,11 Z" fill={C.hair} />
+        )
+      )}
+      {hair === 'shaved' && headgear === 'none' && (
+        /* Shaved — thin scalp tint */
+        <path d="M37,8 L63,8 L67,12 L69,20 L67,18 L33,18 L31,20 L33,12 Z"
+          fill={C.hairM} opacity="0.45" />
+      )}
+
+      {/* ══════════════════════════════════════════
+          11. HEADGEAR (topmost layer)
+          ══════════════════════════════════════════ */}
+      {headgear === 'beret' && (
+        <g>
+          {/* Crown — asymmetric blob pulled right, drapes over right ear */}
+          <path d="M28,16 C26,6 34,2 50,3 C66,2 74,6 74,14 C74,19 65,22 56,20 C52,22 42,21 34,17 Z"
+            fill={C.bgr} />
+          {/* Right drape fold */}
+          <path d="M58,19 C64,20 70,23 74,28 C72,30 68,28 66,25 C63,23 60,21 58,19 Z"
+            fill={C.bgrS} />
+          {/* Under-brim shadow line */}
+          <path d="M34,17 C42,21 52,22 56,20 C65,22 74,19 74,14 C72,18 64,19 56,18 C50,19 40,18 34,16 Z"
+            fill="#000" opacity="0.15" />
+          {/* Band line at hairline */}
+          <line x1="34" y1="16" x2="40" y2="17" stroke={C.bgrS} strokeWidth="1.5" />
+          {/* Badge — pinned on left side */}
+          <circle cx="38" cy="14" r="4.5" fill={C.bdg} />
+          <circle cx="38" cy="14" r="2.8" fill={C.bdgH} />
+          {/* Badge symbol — diamond */}
+          <path d="M36.5,14 L38,11.5 L39.5,14 L38,16.5 Z" fill={C.bdg} />
+          <circle cx="38" cy="14" r="0.9" fill={C.bdgH} opacity="0.6" />
+        </g>
+      )}
+
+      {headgear === 'helmet' && (
+        <g>
+          {/* Dome shell */}
+          <path d="M28,20 C26,8 34,2 50,2 C66,2 74,8 72,20 L72,26 C72,28 66,30 50,30 C34,30 28,28 28,26 Z"
+            fill={C.hlm} />
+          {/* Right-side dome shadow */}
+          <path d="M58,3 C66,6 72,12 72,20 L72,26 C72,28 66,30 58,30 L58,3 Z"
+            fill={C.hlmS} opacity="0.5" />
+          {/* Brim lip — darker rim below dome */}
+          <path d="M26,25 L74,25 L72,29 C72,31 66,32 50,32 C34,32 28,31 28,29 Z"
+            fill={C.hlmS} />
+          {/* Rim highlight (top edge pops against dark bg) */}
+          <path d="M28,20 C26,8 34,2 50,2 C66,2 74,8 72,20"
+            fill="none" stroke={C.hlmE} strokeWidth="1.2" opacity="0.8" />
+          {/* Side rail stubs */}
+          <rect x="26" y="22" width="5" height="3" rx="0.8" fill={C.hlmS} stroke={C.hlmE} strokeWidth="0.4" />
+          <rect x="69" y="22" width="5" height="3" rx="0.8" fill={C.hlmS} stroke={C.hlmE} strokeWidth="0.4" />
+        </g>
+      )}
+
+      {headgear === 'boonie' && (
+        <g>
+          {/* Crown */}
+          <path d="M34,15 C33,6 38,2 50,2 C62,2 67,6 66,15 L65,21 C65,23 58,25 50,25 C42,25 35,23 35,21 Z"
+            fill={C.bgr} />
+          {/* Crown right shadow */}
+          <path d="M58,3 C64,7 66,11 66,15 L65,21 C65,23 58,25 58,21 L58,3 Z"
+            fill={C.bgrS} opacity="0.5" />
+          {/* Wide floppy brim — droops at sides */}
+          <path d="M10,21 C8,16 16,14 34,16 C40,20 60,20 66,16 C84,14 92,16 90,21 C88,26 80,27 66,24 C60,28 40,28 34,24 C16,28 10,26 10,21 Z"
+            fill={C.bgrS} />
+          {/* Brim top-edge highlight */}
+          <path d="M18,20 C30,16 42,17 50,17 C58,17 70,16 82,20"
+            fill="none" stroke={C.bgr} strokeWidth="1" opacity="0.7" />
+          {/* Sweat-band strip */}
+          <rect x="34" y="19" width="32" height="3" rx="0" fill={C.bgrS} opacity="0.6" />
+        </g>
+      )}
     </svg>
   );
 }

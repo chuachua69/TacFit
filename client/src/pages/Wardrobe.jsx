@@ -39,7 +39,7 @@ export default function Wardrobe() {
       {/* Character preview + stats */}
       <div className="card" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <PixelCharacter equipped={previewEquipped} size={2.5} />
+          <PixelCharacter equipped={previewEquipped} size={1.3} />
           {preview && (
             <div style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700 }}>PREVIEW</div>
           )}

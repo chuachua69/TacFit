@@ -117,7 +117,7 @@ export default function Dashboard() {
           }} />
         </div>
 
-        <PixelCharacter equipped={char.equipped} size={3.5} onClick={() => navigate('/bunk')} />
+        <PixelCharacter equipped={char.equipped} size={1.8} onClick={() => navigate('/bunk')} />
 
         {/* XP bar */}
         <div style={{ width: 140, marginTop: 8 }}>
