@@ -150,8 +150,7 @@ export default function GymLogger({ workout, profile, onSave }) {
         <PlateSheet
           exercise={{
             ...exercises[plateEx],
-            weight: exercises[plateEx].sets.find(s => s.type === 'normal' && !s.done)?.weight
-              ?? exercises[plateEx].sets.find(s => s.type === 'normal')?.weight
+            weight: exercises[plateEx].sets.find(s => !s.done)?.weight
               ?? exercises[plateEx].weight ?? 0,
             sets: exercises[plateEx].sets.filter(s => s.type === 'normal').length,
           }}
@@ -183,8 +182,7 @@ export default function GymLogger({ workout, profile, onSave }) {
                   background: 'var(--accent)15', border: '1px solid var(--accent)40',
                   borderRadius: 6, padding: '2px 8px',
                 }}>
-                {(exercises[exIdx].sets.find(s => s.type === 'normal' && !s.done)?.weight
-                  ?? exercises[exIdx].sets.find(s => s.type === 'normal')?.weight
+                {(exercises[exIdx].sets.find(s => !s.done)?.weight
                   ?? ex.weight ?? 0)} {ex.unit || profile.unit} — plates 🏋️
               </button>
             </div>
