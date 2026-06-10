@@ -1,124 +1,126 @@
 import { ITEMS } from '../store/character';
 
-const PX = 4;
-const W = 16;
+const PX = 3;
+const W = 20;
 
 const C = {
   _: null,
-  O: '#0a0a0f',
-  s: '#c8836a',    // skin
-  e: '#2a1208',    // eye
-  m: '#7a3020',    // mouth
-  H: '#2d3d1f',    // head item (overridden)
-  h: '#1a2410',    // head item dark
+  O: '#0a0a0f',    // outline
+  s: '#c8906a',    // skin
+  b: '#5a3010',    // eyebrow
+  e: '#1a1008',    // eye dark
+  m: '#7a3a20',    // mouth
+  H: '#3d5c2a',    // head item (overridden)
+  h: '#2a4018',    // head item shadow
+  G: '#c8a040',    // badge gold
   v: '#e07030',    // face item (overridden)
-  A: '#2d3540',    // body item (overridden)
-  a: '#1a2030',    // body item shadow
-  B: '#c8a040',    // belt buckle gold
-  b: '#5a4020',    // belt dark
-  P: '#1e2535',    // pants
-  p: '#141824',    // pants shadow
-  K: '#181818',    // boots
-  k: '#0c0c0c',    // boots shadow
+  A: '#4a6035',    // body item (overridden)
+  a: '#344825',    // body item shadow
+  c: '#c8c8a0',    // collar/undershirt
+  B: '#8a6035',    // belt
+  g: '#c8a040',    // belt buckle gold
+  P: '#2a3822',    // pants
+  p: '#1a2818',    // pants shadow
+  K: '#5a3a1a',    // boots brown
+  k: '#3a2210',    // boots shadow
 };
 
-// 16-wide pixel grid. Each char = 1 pixel cell.
+// 20-wide retro-bit character. Each char = 1 pixel cell.
 const BASE_ROWS = [
-  '_____OOOOOO_____',  // 0  skull top
-  '____OssssssO____',  // 1  forehead
-  '____OssssssO____',  // 2  upper face
-  '____OseeseeO____',  // 3  eyes
-  '____OssssssO____',  // 4  nose
-  '____OssmssO_____',  // 5  mouth
-  '_____OssssO_____',  // 6  chin
-  '____OOAAAAaOO___',  // 7  collar/shoulders
-  '___OAAAAAAAAaO__',  // 8  upper chest
-  '___OAAvAAAvAO___',  // 9  chest pouches
-  '___OAAAAAbAAO___',  // 10 mid torso
-  '___OAAbBBBAaOO__',  // 11 belt
-  '___OOPPPPPPpOO__',  // 12 hips
-  '_____OPPPPpO____',  // 13 upper legs
-  '_____OPPPPpO____',  // 14 lower legs
-  '____OPpO__OPpO__',  // 15 boot tops
-  '____OKKO__OKKO__',  // 16 boots
-  '___OkkkO__OkkkO_',  // 17 boot soles
+  '____OOOOOOOOOOOO____',  // 0  skull top
+  '____OssssssssssO____',  // 1  forehead
+  '____OsbbsssbbsO_____',  // 2  eyebrows
+  '____OseesseesO______',  // 3  eyes
+  '____OssssssssO______',  // 4  nose/cheeks
+  '_____OssmmssO_______',  // 5  mouth
+  '_____OssssssO_______',  // 6  chin/jaw
+  '____OOcAAAAccOO_____',  // 7  neck + collar
+  '___OAAcAAAAAcAAO____',  // 8  upper chest with lapels
+  '___OAAAcAAAAcAAO____',  // 9  chest
+  '___OAAAAAAAAAAAAo___',  // 10 torso
+  '___OAAAgBBBgAAO_____',  // 11 belt + buckle
+  '___OOPPPPPPPpOO_____',  // 12 hips
+  '_____OPPPPpPO_______',  // 13 upper legs
+  '_____OPPPPpPO_______',  // 14 lower legs
+  '____OPpO__OPpO______',  // 15 boot tops
+  '____OKKO__OKKO______',  // 16 boots
+  '___OKKkO__OKKkO_____',  // 17 boot soles
 ];
 
-// Head overlays — rows 0-5 (index = row number)
+// Head overlays — index = row number (0-5)
 const HEAD_OVERLAYS = {
   beret_green: [
-    '___HHHHHHHHHHHH_',  // 0: wide beret crown
-    '___HHHHHHHHHHHH_',  // 1: beret body
-    '____HHHHHHHhh___',  // 2: beret drape
-    null, null, null,
+    '__HHHHHHHHHHHHHHHH__',  // 0 wide beret crown
+    '__HHHHHGHHHHHhHHHH__', // 1 beret body + gold badge
+    null, null, null, null,  // 2-5 face shows
   ],
   helmet_mk6: [
-    '___HHHHHHHHHHHH_',  // 0
-    '__HHHHHHHHHHHhH_',  // 1: wide shell
-    '__HHHhHHHHHhHHH_',  // 2: brow shadow
+    '___HHHHHHHHHHHHHH___',  // 0 dome
+    '__HHHHHHHHHHHHHHhH__', // 1 wide shell
+    '__HHHhHHHHHHHhHHH___', // 2 brow shadow (covers eyebrows)
     null, null, null,
   ],
   boonie_hat: [
-    '____HHHHHHHh____',  // 0: crown
-    '__HHHHHHHHHHHHh_',  // 1: wide floppy brim
+    '____HHHHHHHHHHhH____',  // 0 crown
+    '_HHHHHHHHHHHHHHHhHH_',  // 1 wide floppy brim
     null, null, null, null,
   ],
   ops_helmet: [
-    '__HHHHHHHHHHHhH_',  // 0: ops-core shell
-    '__HHhHHHHHHHhHH_',  // 1: rail shadow
-    '__HHHHHHHHHHhHH_',  // 2: brow
+    '__HHHHHHHHHHHHHHhH__',  // 0 ops-core shell
+    '__HHhHHHHHHHHHhHHH__',  // 1 rail shadow
+    '__HHHHHHHHHHHHhHHH__',  // 2 brow mount
     null, null, null,
   ],
 };
 
-// Face overlays — startRow = 3, index 0 = row 3
+// Face overlays — startRow=3, index 0 = row 3
 const FACE_OVERLAYS = {
   visor_amber: [
-    '____OvvvvvvO____',  // row 3: eye-level visor strip
-    null,                 // row 4: nose visible
-    null,                 // row 5: mouth visible
+    '____OvvvvvvvvO______',  // row 3 eye-level visor
+    null,                     // row 4 nose shows
+    null,                     // row 5 mouth shows
   ],
   nvg: [
-    '____OvvOvvOO____',  // row 3: dual NVG lenses
+    '___OOvvvOvvvOO______',  // row 3 dual NVG lenses
     null,
     null,
   ],
   balaclava: [
-    '____OvvvvvvO____',  // row 3
-    '____OvvvvvvO____',  // row 4
-    '____OvvmvvO_____',  // row 5: mouth slit
+    '____OvvvvvvvvO______',  // row 3
+    '____OvvvvvvvvO______',  // row 4
+    '_____OvvmmvvO_______',  // row 5 mouth slit
   ],
 };
 
-// Body overlays — startRow = 7, index 0 = row 7
+// Body overlays — startRow=7, index 0 = row 7
 const BODY_OVERLAYS = {
   vest_basic: [
-    null,                    // row 7: base collar
-    '___OAAAAAAAAAo__',   // row 8
-    '___OAAvAAAvAO___',   // row 9: mag pouches
-    '___OAAAAAbAAO___',   // row 10
-    '___OAABBBBBaOO__',  // row 11: belt + buckle
+    null,
+    '___OAAcAAAAAcAAO____',   // row 8
+    '___OAAAcAAAAcAAO____',   // row 9
+    '___OAAAAAAAAAAAAo___',   // row 10
+    '___OAAAgBBBgAAO_____',  // row 11
   ],
   vest_plate: [
     null,
-    '___OAaAAAAaaAO__',   // row 8: plate stitching
-    '___OAaaAAbaaAO__',  // row 9
-    '___OAaAABBaaAO__',  // row 10
-    '___OAABBBBBaOO__',  // row 11
+    '___OAaaAAAAaAAO_____',   // plate stitching
+    '___OAaaAAAAaAAO_____',
+    '___OAAAAAAAAAaAO____',
+    '___OAAAgBBBgAAO_____',
   ],
   vest_arid: [
     null,
-    '___OAAAAAAAAAo__',
-    '___OAAvAAAvAO___',
-    '___OAAAAAbAAO___',
-    '___OAABBBBBaOO__',
+    '___OAAcAAAAAcAAO____',
+    '___OAAAcAAAAcAAO____',
+    '___OAAAAAAAAAAAAo___',
+    '___OAAAgBBBgAAO_____',
   ],
   vest_multicam: [
     null,
-    '___OAAaAAAAaAO__',
-    '___OAavAAAvAaO__',
-    '___OAAaAbAAaO___',
-    '___OAABBBBBaOO__',
+    '___OAAaAAAAaAAO_____',
+    '___OAaAAAAaaAAO_____',
+    '___OAAAAaAAAAAaO____',
+    '___OAAAgBBBgAAO_____',
   ],
 };
 
@@ -140,7 +142,7 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
 
   const headColor = headItem?.color || '#3d5a2a';
   const faceColor = faceItem?.color || '#e07030';
-  const bodyColor = bodyItem?.color || '#2d3540';
+  const bodyColor = bodyItem?.color || '#4a6035';
 
   const svgW = W * PX * size;
   const svgH = BASE_ROWS.length * PX * size;
@@ -164,7 +166,7 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
   if (headOverlay) {
     headOverlay.forEach((row, rowIdx) => {
       if (!row) return;
-      rowToPixels(row, { H: headColor, h: headColor }).forEach(({ x, color }) => {
+      rowToPixels(row, { H: headColor, h: headColor, G: '#c8a040' }).forEach(({ x, color }) => {
         rects.push(
           <rect key={`h-${rowIdx}-${x}`}
             x={x * PX * size} y={rowIdx * PX * size}

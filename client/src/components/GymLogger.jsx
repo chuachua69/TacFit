@@ -148,7 +148,11 @@ export default function GymLogger({ workout, profile, onSave }) {
 
       {plateEx !== null && (
         <PlateSheet
-          exercise={{ ...exercises[plateEx], weight: exercises[plateEx].sets.find(s => s.type === 'normal')?.weight || exercises[plateEx].weight || 0 }}
+          exercise={{
+            ...exercises[plateEx],
+            weight: exercises[plateEx].sets.find(s => s.type === 'normal')?.weight || exercises[plateEx].weight || 0,
+            sets: exercises[plateEx].sets.filter(s => s.type === 'normal').length,
+          }}
           barWeight={profile.barWeight}
           unit={profile.unit}
           onClose={() => setPlateEx(null)}
@@ -166,31 +170,31 @@ export default function GymLogger({ workout, profile, onSave }) {
 
       {exercises.map((ex, exIdx) => (
         <div key={exIdx} className="card">
-          <button onClick={() => setExpandedEx(expandedEx === exIdx ? -1 : exIdx)}
-            style={{ width: '100%', textAlign: 'left', background: 'none', padding: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: expandedEx === exIdx ? '0.75rem' : 0 }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>{ex.name}</div>
-                <button
-                  onClick={e => { e.stopPropagation(); setPlateEx(exIdx); }}
-                  style={{
-                    fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700,
-                    background: 'var(--accent)15', border: '1px solid var(--accent)40',
-                    borderRadius: 6, padding: '2px 8px', marginTop: 2,
-                  }}>
-                  {exercises[exIdx].sets.find(s => s.type === 'normal')?.weight || ex.weight || 0} {ex.unit || profile.unit} — plates 🏋️
-                </button>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {ex.sets.filter(s => s.done).length}/{ex.sets.length}
-                </span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  {expandedEx === exIdx ? '▲' : '▼'}
-                </span>
-              </div>
+          {/* Header row — two separate click zones, no nested buttons */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: expandedEx === exIdx ? '0.75rem' : 0 }}>
+            <div>
+              <div style={{ fontWeight: 700, marginBottom: 3 }}>{ex.name}</div>
+              <button
+                onClick={() => setPlateEx(exIdx)}
+                style={{
+                  fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700,
+                  background: 'var(--accent)15', border: '1px solid var(--accent)40',
+                  borderRadius: 6, padding: '2px 8px',
+                }}>
+                {exercises[exIdx].sets.find(s => s.type === 'normal')?.weight || ex.weight || 0} {ex.unit || profile.unit} — plates 🏋️
+              </button>
             </div>
-          </button>
+            <button
+              onClick={() => setExpandedEx(expandedEx === exIdx ? -1 : exIdx)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: '2px 0', flexShrink: 0 }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                {ex.sets.filter(s => s.done).length}/{ex.sets.length}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                {expandedEx === exIdx ? '▲' : '▼'}
+              </span>
+            </button>
+          </div>
 
           {expandedEx === exIdx && (
             <>
