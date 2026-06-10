@@ -9,6 +9,7 @@ import Settings from './pages/Settings';
 import Assessment from './pages/Assessment';
 import Bunk from './pages/Bunk';
 import Stats from './pages/Stats';
+import ReloadPrompt from './components/ReloadPrompt';
 import './styles/global.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
 
   return (
     <HashRouter>
+      <ReloadPrompt />
       <Routes>
         <Route path="/" element={
           !hasSetup ? <Navigate to="/onboarding" replace /> :
