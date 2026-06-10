@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 
 const TABS = [
-  { key: 'dashboard', label: 'Home',     icon: '🏠', path: '/dashboard' },
-  { key: 'overview',  label: 'Plan',     icon: '📅', path: '/overview' },
-  { key: 'settings',  label: 'Settings', icon: '⚙️',  path: '/settings' },
+  { key: 'dashboard', label: 'Home',    icon: '🏠', path: '/dashboard' },
+  { key: 'overview',  label: 'Plan',    icon: '📅', path: '/overview' },
+  { key: 'stats',     label: 'Stats',   icon: '📊', path: '/stats' },
+  { key: 'settings',  label: 'Settings', icon: '⚙️', path: '/settings' },
 ];
 
 export default function BottomNav({ active }) {
@@ -21,14 +22,14 @@ export default function BottomNav({ active }) {
       {TABS.map(tab => (
         <button key={tab.key} onClick={() => navigate(tab.path)}
           style={{
-            flex: 1, padding: '0.75rem 0',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+            flex: 1, padding: '0.6rem 0',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none',
             color: active === tab.key ? 'var(--accent)' : 'var(--text-muted)',
             transition: 'color 0.15s',
           }}>
-          <span style={{ fontSize: '1.2rem' }}>{tab.icon}</span>
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '1.1rem' }}>{tab.icon}</span>
+          <span style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             {tab.label}
           </span>
         </button>

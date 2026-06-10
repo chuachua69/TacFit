@@ -33,7 +33,7 @@ export const ITEMS = [
 export const charStore = {
   get: () => {
     const saved = localStorage.getItem(KEY);
-    return saved ? { ...DEFAULTS, ...JSON.parse(saved) } : { ...DEFAULTS, owned: ['beret_green', 'visor_amber', 'vest_basic'], equipped: { head: 'beret_green', face: 'visor_amber', body: 'vest_basic' } };
+    return saved ? { ...DEFAULTS, ...JSON.parse(saved) } : { ...DEFAULTS, owned: ['beret_green', 'visor_amber', 'vest_basic'], equipped: { head: 'beret_green', face: null, body: 'vest_basic' } };
   },
   save: (data) => localStorage.setItem(KEY, JSON.stringify(data)),
 
@@ -58,7 +58,12 @@ export const charStore = {
     const char = charStore.get();
     const item = ITEMS.find(i => i.id === itemId);
     if (!item || !char.owned.includes(itemId)) return;
-    char.equipped[item.slot] = itemId;
+    // Toggle: unequip if already on
+    if (char.equipped[item.slot] === itemId) {
+      char.equipped[item.slot] = null;
+    } else {
+      char.equipped[item.slot] = itemId;
+    }
     charStore.save(char);
   },
 

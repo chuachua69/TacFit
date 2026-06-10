@@ -7,7 +7,8 @@ import SessionDetail from './pages/SessionDetail';
 import Overview from './pages/Overview';
 import Settings from './pages/Settings';
 import Assessment from './pages/Assessment';
-import Wardrobe from './pages/Wardrobe';
+import Bunk from './pages/Bunk';
+import Stats from './pages/Stats';
 import './styles/global.css';
 
 function App() {
@@ -40,7 +41,8 @@ function App() {
         <Route path="/overview" element={<Overview />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/assessment" element={<Assessment />} />
-        <Route path="/wardrobe" element={<Wardrobe />} />
+        <Route path="/bunk" element={<Bunk />} />
+        <Route path="/stats" element={<Stats />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

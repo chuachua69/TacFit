@@ -1,122 +1,124 @@
 import { ITEMS } from '../store/character';
 
-// 4px per pixel cell. Character is 14 wide x 22 tall = 56x88px
 const PX = 4;
-const W = 14;
+const W = 16;
 
-// Color palette
 const C = {
-  _: null,           // transparent
-  O: '#0a0a0f',      // outline
-  s: '#9a6540',      // skin
-  H: '#2d3d1f',      // helmet default (overridden by item)
-  h: '#1a2410',      // helmet dark
-  v: '#e07030',      // visor default
-  A: '#2d3540',      // armor/vest default
-  a: '#1e2838',      // armor dark
-  B: '#8a7040',      // belt buckle
-  P: '#1e2535',      // pants
-  p: '#161c28',      // pants dark
-  K: '#12121a',      // boots
-  k: '#0a0a12',      // boots dark
-  w: '#e0e0e0',      // white/highlight
+  _: null,
+  O: '#0a0a0f',
+  s: '#c8836a',    // skin
+  e: '#2a1208',    // eye
+  m: '#7a3020',    // mouth
+  H: '#2d3d1f',    // head item (overridden)
+  h: '#1a2410',    // head item dark
+  v: '#e07030',    // face item (overridden)
+  A: '#2d3540',    // body item (overridden)
+  a: '#1a2030',    // body item shadow
+  B: '#c8a040',    // belt buckle gold
+  b: '#5a4020',    // belt dark
+  P: '#1e2535',    // pants
+  p: '#141824',    // pants shadow
+  K: '#181818',    // boots
+  k: '#0c0c0c',    // boots shadow
 };
 
-// Base character rows (no head gear, no face gear, no vest — those are layers)
+// 16-wide pixel grid. Each char = 1 pixel cell.
 const BASE_ROWS = [
-  '______OOOO______',  // 0  helmet base (rendered by head layer)
-  '_____OOOOOO_____',  // 1
-  '____OOOOOOOO____',  // 2
-  '____OOOOOOOO____',  // 3
-  '____OssssssO____',  // 4  face
-  '____OssssssO____',  // 5
-  '_____OssssO_____',  // 6  neck
-  '___OOAAAAAaOO___',  // 7  shoulders
-  '___OAAAAAAAAAo__',  // 8  upper torso
-  '___OABBBBBBAo___',  // 9  belt
-  '___OAAAAAAaAO___',  // 10
-  '___OOPPPPPPoO___',  // 11 upper legs
-  '_____OPPPPpO____',  // 12
-  '_____OPPPPpO____',  // 13
-  '____OpO___OpO___',  // 14 lower legs
-  '____OKKO__OKKO__',  // 15 boots
-  '____OkkO__OkkO__',  // 16
+  '_____OOOOOO_____',  // 0  skull top
+  '____OssssssO____',  // 1  forehead
+  '____OssssssO____',  // 2  upper face
+  '____OseeseeO____',  // 3  eyes
+  '____OssssssO____',  // 4  nose
+  '____OssmssO_____',  // 5  mouth
+  '_____OssssO_____',  // 6  chin
+  '____OOAAAAaOO___',  // 7  collar/shoulders
+  '___OAAAAAAAAaO__',  // 8  upper chest
+  '___OAAvAAAvAO___',  // 9  chest pouches
+  '___OAAAAAbAAO___',  // 10 mid torso
+  '___OAAbBBBAaOO__',  // 11 belt
+  '___OOPPPPPPpOO__',  // 12 hips
+  '_____OPPPPpO____',  // 13 upper legs
+  '_____OPPPPpO____',  // 14 lower legs
+  '____OPpO__OPpO__',  // 15 boot tops
+  '____OKKO__OKKO__',  // 16 boots
+  '___OkkkO__OkkkO_',  // 17 boot soles
 ];
 
-// Head item pixel overlays (rows 0-6, same width)
+// Head overlays — rows 0-5 (index = row number)
 const HEAD_OVERLAYS = {
-  beret_green:  [
-    '____HHHHHHHH____',
-    '___HHHHHHHHHH___',
-    '____HHHHHHHH____',
-    null, null, null, null,
+  beret_green: [
+    '___HHHHHHHHHHHH_',  // 0: wide beret crown
+    '___HHHHHHHHHHHH_',  // 1: beret body
+    '____HHHHHHHhh___',  // 2: beret drape
+    null, null, null,
   ],
   helmet_mk6: [
-    '___HHHHHHHHHH___',
-    '__HHhHHHHHhHH___',
-    '__HHHHHHHHhHH___',
-    '__hHHHHHHHHHh___',
+    '___HHHHHHHHHHHH_',  // 0
+    '__HHHHHHHHHHHhH_',  // 1: wide shell
+    '__HHHhHHHHHhHHH_',  // 2: brow shadow
     null, null, null,
   ],
   boonie_hat: [
-    '___HHHHHHHHHH___',
-    '__HHHHHHHHHHHH__',
-    '_HHHHHHHHHHHHHH_',
+    '____HHHHHHHh____',  // 0: crown
+    '__HHHHHHHHHHHHh_',  // 1: wide floppy brim
     null, null, null, null,
   ],
   ops_helmet: [
-    '__HHHHHHHHhHH___',
-    '__HHhHHHHHhHH___',
-    '__HHHHHHHHHhH___',
-    '__hHHHHHHHHHh___',
+    '__HHHHHHHHHHHhH_',  // 0: ops-core shell
+    '__HHhHHHHHHHhHH_',  // 1: rail shadow
+    '__HHHHHHHHHHhHH_',  // 2: brow
     null, null, null,
   ],
 };
 
-// Face item overlays (rows 3-5)
+// Face overlays — startRow = 3, index 0 = row 3
 const FACE_OVERLAYS = {
   visor_amber: [
-    '____OvvvvvvO____',
-    '____OvvvvvvO____',
-    null,
+    '____OvvvvvvO____',  // row 3: eye-level visor strip
+    null,                 // row 4: nose visible
+    null,                 // row 5: mouth visible
   ],
   nvg: [
-    '____OOOOOOO_____',
-    '___OvOOOvO______',
+    '____OvvOvvOO____',  // row 3: dual NVG lenses
+    null,
     null,
   ],
   balaclava: [
-    '____OSSSSSSOO___',
-    '____OSSSSSSOO___',
-    '____OSSSSSOO____',
+    '____OvvvvvvO____',  // row 3
+    '____OvvvvvvO____',  // row 4
+    '____OvvmvvO_____',  // row 5: mouth slit
   ],
 };
 
-// Body overlays (rows 7-10)
+// Body overlays — startRow = 7, index 0 = row 7
 const BODY_OVERLAYS = {
   vest_basic: [
-    '___OOAAAAAOOO___',
-    '___OAAAAAAAOO___',
-    '___OAABABAAOO___',
-    '___OAAAAAAAOO___',
+    null,                    // row 7: base collar
+    '___OAAAAAAAAAo__',   // row 8
+    '___OAAvAAAvAO___',   // row 9: mag pouches
+    '___OAAAAAbAAO___',   // row 10
+    '___OAABBBBBaOO__',  // row 11: belt + buckle
   ],
   vest_plate: [
-    '___OOaAAAAOOO___',
-    '___OaAAaAAAOO___',
-    '___OaABABAAOO___',
-    '___OaAAAAAaOO___',
+    null,
+    '___OAaAAAAaaAO__',   // row 8: plate stitching
+    '___OAaaAAbaaAO__',  // row 9
+    '___OAaAABBaaAO__',  // row 10
+    '___OAABBBBBaOO__',  // row 11
   ],
   vest_arid: [
-    '___OOAAAAAOOO___',
-    '___OAHAAHAHOO___',
-    '___OAHBABHAOO___',
-    '___OAHAHAAOO____',
+    null,
+    '___OAAAAAAAAAo__',
+    '___OAAvAAAvAO___',
+    '___OAAAAAbAAO___',
+    '___OAABBBBBaOO__',
   ],
   vest_multicam: [
-    '___OOAAHAHOOO___',
-    '___OAHAHAAHOO___',
-    '___OAHBABHAOOO__',
-    '___OAHAHAAAOO___',
+    null,
+    '___OAAaAAAAaAO__',
+    '___OAavAAAvAaO__',
+    '___OAAaAbAAaO___',
+    '___OAABBBBBaOO__',
   ],
 };
 
@@ -125,7 +127,7 @@ function rowToPixels(row, overrideColors = {}) {
   const pixels = [];
   for (let x = 0; x < row.length; x++) {
     const ch = row[x];
-    const color = overrideColors[ch] || C[ch];
+    const color = overrideColors[ch] ?? C[ch];
     if (color) pixels.push({ x, color });
   }
   return pixels;
@@ -136,7 +138,7 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
   const faceItem = ITEMS.find(i => i.id === equipped.face);
   const bodyItem = ITEMS.find(i => i.id === equipped.body);
 
-  const headColor = headItem?.color || '#2d3d1f';
+  const headColor = headItem?.color || '#3d5a2a';
   const faceColor = faceItem?.color || '#e07030';
   const bodyColor = bodyItem?.color || '#2d3540';
 
@@ -145,9 +147,9 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
 
   const rects = [];
 
+  // Base layer
   BASE_ROWS.forEach((row, rowIdx) => {
-    const pixels = rowToPixels(row);
-    pixels.forEach(({ x, color }) => {
+    rowToPixels(row).forEach(({ x, color }) => {
       rects.push(
         <rect key={`b-${rowIdx}-${x}`}
           x={x * PX * size} y={rowIdx * PX * size}
@@ -157,12 +159,12 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
     });
   });
 
-  // Head overlay
+  // Head overlay (rows 0-5)
   const headOverlay = headItem ? HEAD_OVERLAYS[headItem.id] : HEAD_OVERLAYS['beret_green'];
   if (headOverlay) {
     headOverlay.forEach((row, rowIdx) => {
       if (!row) return;
-      rowToPixels(row, { H: headColor, h: headColor + 'bb' }).forEach(({ x, color }) => {
+      rowToPixels(row, { H: headColor, h: headColor }).forEach(({ x, color }) => {
         rects.push(
           <rect key={`h-${rowIdx}-${x}`}
             x={x * PX * size} y={rowIdx * PX * size}
@@ -173,8 +175,8 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
     });
   }
 
-  // Face overlay (rows 3-5)
-  const faceOverlay = faceItem ? FACE_OVERLAYS[faceItem.id] : FACE_OVERLAYS['visor_amber'];
+  // Face overlay (rows 3-5, offset = 3)
+  const faceOverlay = faceItem ? FACE_OVERLAYS[faceItem.id] : null;
   if (faceOverlay) {
     faceOverlay.forEach((row, i) => {
       const rowIdx = i + 3;
@@ -190,13 +192,13 @@ export default function PixelCharacter({ equipped = {}, size = 1, onClick }) {
     });
   }
 
-  // Body overlay (rows 7-10)
+  // Body overlay (rows 7-11, offset = 7)
   const bodyOverlay = bodyItem ? BODY_OVERLAYS[bodyItem.id] : BODY_OVERLAYS['vest_basic'];
   if (bodyOverlay) {
     bodyOverlay.forEach((row, i) => {
       const rowIdx = i + 7;
       if (!row) return;
-      rowToPixels(row, { A: bodyColor, a: bodyColor, H: headColor }).forEach(({ x, color }) => {
+      rowToPixels(row, { A: bodyColor, a: bodyColor }).forEach(({ x, color }) => {
         rects.push(
           <rect key={`v-${i}-${x}`}
             x={x * PX * size} y={rowIdx * PX * size}

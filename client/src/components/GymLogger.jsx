@@ -1,19 +1,32 @@
 import { useState } from 'react';
 import RestTimer from './RestTimer';
 import PlateSheet from './PlateSheet';
+import { storage } from '../store/storage';
 
 const SET_TYPES = ['warmup', 'normal', 'dropset'];
+
+function getWellnessMult(wellness) {
+  if (!wellness) return 1;
+  let m = 1.0;
+  if (wellness.fatigue >= 4 || wellness.soreness >= 4) m -= 0.15;
+  else if (wellness.fatigue >= 3 || wellness.soreness >= 3) m -= 0.07;
+  if (wellness.sleep < 6) m -= 0.05;
+  if (wellness.fatigue <= 2 && wellness.soreness <= 2 && wellness.sleep >= 7) m += 0.05;
+  return Math.max(0.75, Math.min(1.1, m));
+}
 const SET_TYPE_STYLE = {
   warmup:  { color: 'var(--warn)',    bg: 'var(--warn)20',    label: 'W' },
   normal:  { color: 'var(--text)',    bg: 'var(--bg-elevated)', label: 'N' },
   dropset: { color: 'var(--gym)',     bg: 'var(--gym)20',     label: 'D' },
 };
 
-function defaultSets(exercise) {
+function defaultSets(exercise, mult = 1) {
+  const base = exercise.weight || 0;
+  const adj = base > 0 ? Math.round((base * mult) / 2.5) * 2.5 : 0;
   const sets = [];
-  sets.push({ type: 'warmup', reps: 10, weight: exercise.weight ? Math.round(exercise.weight * 0.6) : 0, rpe: null, done: false });
+  sets.push({ type: 'warmup', reps: 10, weight: adj ? Math.round(adj * 0.6 / 2.5) * 2.5 : 0, rpe: null, done: false });
   for (let i = 0; i < (exercise.sets || 3); i++) {
-    sets.push({ type: 'normal', reps: exercise.reps || 8, weight: exercise.weight || 0, rpe: null, done: false });
+    sets.push({ type: 'normal', reps: exercise.reps || 8, weight: adj, rpe: null, done: false });
   }
   return sets;
 }
@@ -78,8 +91,12 @@ function SetRow({ set, index, onChange, onComplete, unit }) {
 }
 
 export default function GymLogger({ workout, profile, onSave }) {
+  const wellness = storage.getTodayWellness();
+  const mult = getWellnessMult(wellness);
+  const pctDiff = Math.round((mult - 1) * 100);
+
   const [exercises, setExercises] = useState(
-    workout.exercises.map(ex => ({ ...ex, sets: defaultSets(ex) }))
+    workout.exercises.map(ex => ({ ...ex, sets: defaultSets(ex, mult) }))
   );
   const [showTimer, setShowTimer] = useState(false);
   const [expandedEx, setExpandedEx] = useState(0);
@@ -109,6 +126,21 @@ export default function GymLogger({ workout, profile, onSave }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {showTimer && <RestTimer onDismiss={() => setShowTimer(false)} />}
+
+      {/* Wellness adjustment banner */}
+      {wellness && pctDiff !== 0 && (
+        <div style={{
+          padding: '0.6rem 1rem', borderRadius: 'var(--radius)',
+          background: pctDiff < 0 ? 'var(--warn)15' : 'var(--success)15',
+          border: `1px solid ${pctDiff < 0 ? 'var(--warn)40' : 'var(--success)40'}`,
+          fontSize: '0.8rem', color: pctDiff < 0 ? 'var(--warn)' : 'var(--success)',
+          fontWeight: 600,
+        }}>
+          {pctDiff < 0 ? '⚡' : '🔥'} Wellness adjustment: {pctDiff > 0 ? '+' : ''}{pctDiff}% weight
+          {pctDiff < 0 && ` — ${wellness.fatigue >= 4 ? 'high fatigue' : wellness.soreness >= 4 ? 'high soreness' : 'sub-optimal recovery'}`}
+        </div>
+      )}
+
       {plateEx !== null && (
         <PlateSheet
           exercise={{ ...exercises[plateEx], weight: exercises[plateEx].sets.find(s => s.type === 'normal')?.weight || exercises[plateEx].weight || 0 }}
