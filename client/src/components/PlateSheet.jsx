@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { calcPlatesPerSide, plateColour } from '../lib/plateCalc';
 
 export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
@@ -5,22 +6,62 @@ export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
   const totalPerSide = plates.reduce((a, b) => a + b, 0);
   const totalWeight = barWeight + totalPerSide * 2;
 
+  const [mounted, setMounted] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const startY = useRef(null);
+  const isDragging = useRef(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const onTouchStart = e => {
+    startY.current = e.touches[0].clientY;
+    isDragging.current = true;
+  };
+  const onTouchMove = e => {
+    if (!isDragging.current) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy > 0) setDragY(dy);
+  };
+  const onTouchEnd = () => {
+    isDragging.current = false;
+    if (dragY > 100) {
+      onClose();
+    } else {
+      setDragY(0);
+    }
+  };
+
+  const sheetStyle = {
+    background: 'var(--bg-card)',
+    borderRadius: '20px 20px 0 0',
+    padding: '1.5rem',
+    width: '100%',
+    maxWidth: 480,
+    margin: '0 auto',
+    borderTop: '1px solid var(--border)',
+    transform: `translateY(${mounted ? dragY : '100%'})`,
+    transition: dragY > 0 ? 'none' : 'transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)',
+    touchAction: 'none',
+  };
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 150,
-      background: 'rgba(0,0,0,0.85)',
+      background: mounted ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0)',
       display: 'flex', alignItems: 'flex-end',
+      transition: 'background 0.38s',
     }} onClick={onClose}>
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          borderRadius: '20px 20px 0 0',
-          padding: '1.5rem',
-          width: '100%', maxWidth: 480, margin: '0 auto',
-          borderTop: '1px solid var(--border)',
-        }}
-        onClick={e => e.stopPropagation()}>
-        <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 999, margin: '0 auto 1.25rem' }} />
+      <div style={sheetStyle}
+        onClick={e => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}>
+
+        {/* Drag handle */}
+        <div style={{ width: 40, height: 4, background: 'var(--border)', borderRadius: 999, margin: '0 auto 1.25rem', cursor: 'grab' }} />
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
           <div>
@@ -40,12 +81,9 @@ export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
             Plates per side
           </div>
 
-          {/* Visual barbell */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, overflowX: 'auto', padding: '8px 0' }}>
-            {/* Left collar */}
             <div style={{ width: 10, height: 18, background: '#555', borderRadius: '3px 0 0 3px', flexShrink: 0 }} />
 
-            {/* Left plates (reversed — outermost first visually) */}
             {[...plates].reverse().map((p, i) => {
               const h = Math.max(28, Math.min(72, p * 2.2));
               return (
@@ -63,7 +101,6 @@ export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
               );
             })}
 
-            {/* Bar */}
             <div style={{
               width: 60, height: 12, background: '#888',
               borderRadius: 4, flexShrink: 0,
@@ -73,7 +110,6 @@ export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
               {barWeight}{unit}
             </div>
 
-            {/* Right plates */}
             {plates.map((p, i) => {
               const h = Math.max(28, Math.min(72, p * 2.2));
               return (
@@ -91,7 +127,6 @@ export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
               );
             })}
 
-            {/* Right collar */}
             <div style={{ width: 10, height: 18, background: '#555', borderRadius: '0 3px 3px 0', flexShrink: 0 }} />
           </div>
 
@@ -109,7 +144,6 @@ export default function PlateSheet({ exercise, barWeight, unit, onClose }) {
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bar</span>
               <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{barWeight} {unit}</span>
             </div>
-            {/* Group plates by size */}
             {Object.entries(
               plates.reduce((acc, p) => ({ ...acc, [p]: (acc[p] || 0) + 1 }), {})
             ).sort((a, b) => Number(b[0]) - Number(a[0])).map(([p, count]) => (
