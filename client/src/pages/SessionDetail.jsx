@@ -35,6 +35,11 @@ export default function SessionDetail() {
     navigate(-1);
   };
 
+  const unmark = () => {
+    storage.removeLog(sessionId);
+    navigate(-1);
+  };
+
   const { workout } = session;
 
   return (
@@ -191,20 +196,25 @@ export default function SessionDetail() {
         </button>
       )}
 
-      {/* Completed status */}
+      {/* Completed status + unmark */}
       {status !== 'pending' && (
-        <div className="card" style={{
-          textAlign: 'center',
-          background: status === 'done' ? 'var(--success)15' : 'var(--danger)15',
-          marginTop: 'auto',
-        }}>
-          <span style={{
-            fontWeight: 700,
-            color: status === 'done' ? 'var(--success)' : 'var(--danger)',
-            textTransform: 'uppercase',
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+          <div className="card" style={{
+            textAlign: 'center',
+            background: status === 'done' ? 'var(--success)15' : 'var(--danger)15',
           }}>
-            {status === 'done' ? '✓ Completed' : `✗ ${status}`}
-          </span>
+            <span style={{
+              fontWeight: 700,
+              color: status === 'done' ? 'var(--success)' : 'var(--danger)',
+              textTransform: 'uppercase',
+            }}>
+              {status === 'done' ? '✓ Completed' : `✗ ${status}`}
+            </span>
+          </div>
+          <button className="btn btn-ghost" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+            onClick={unmark}>
+            ↩ Unmark / Revert to pending
+          </button>
         </div>
       )}
     </div>

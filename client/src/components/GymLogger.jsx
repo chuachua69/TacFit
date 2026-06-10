@@ -31,7 +31,7 @@ function defaultSets(exercise, mult = 1) {
   return sets;
 }
 
-function SetRow({ set, index, onChange, onComplete, unit }) {
+function SetRow({ set, index, onChange, onComplete, unit, isActive }) {
   const style = SET_TYPE_STYLE[set.type];
   return (
     <div style={{
@@ -39,8 +39,13 @@ function SetRow({ set, index, onChange, onComplete, unit }) {
       gridTemplateColumns: '28px 32px 1fr 1fr 44px 36px',
       gap: 6, alignItems: 'center',
       padding: '0.5rem 0',
-      opacity: set.done ? 0.5 : 1,
+      opacity: set.done ? 0.45 : 1,
       borderBottom: '1px solid var(--border)',
+      borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+      paddingLeft: isActive ? '0.4rem' : 0,
+      background: isActive ? 'var(--accent)08' : 'transparent',
+      borderRadius: isActive ? 4 : 0,
+      transition: 'border-left-color 0.2s',
     }}>
       <button onClick={() => {
         const idx = SET_TYPES.indexOf(set.type);
@@ -166,17 +171,15 @@ export default function GymLogger({ workout, profile, onSave }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: expandedEx === exIdx ? '0.75rem' : 0 }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{ex.name}</div>
-                {ex.weight > 0 && (
-                  <button
-                    onClick={e => { e.stopPropagation(); setPlateEx(exIdx); }}
-                    style={{
-                      fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700,
-                      background: 'var(--accent)15', border: '1px solid var(--accent)40',
-                      borderRadius: 6, padding: '2px 8px', marginTop: 2,
-                    }}>
-                    {exercises[exIdx].sets.find(s => s.type === 'normal')?.weight || ex.weight} {ex.unit} — view plates 🏋️
-                  </button>
-                )}
+                <button
+                  onClick={e => { e.stopPropagation(); setPlateEx(exIdx); }}
+                  style={{
+                    fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700,
+                    background: 'var(--accent)15', border: '1px solid var(--accent)40',
+                    borderRadius: 6, padding: '2px 8px', marginTop: 2,
+                  }}>
+                  {exercises[exIdx].sets.find(s => s.type === 'normal')?.weight || ex.weight || 0} {ex.unit || profile.unit} — plates 🏋️
+                </button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -191,13 +194,17 @@ export default function GymLogger({ workout, profile, onSave }) {
 
           {expandedEx === exIdx && (
             <>
-              {ex.sets.map((set, setIdx) => (
-                <SetRow key={setIdx} set={set} index={setIdx}
-                  unit={ex.unit || profile.unit}
-                  onChange={(newSet) => updateSet(exIdx, setIdx, newSet)}
-                  onComplete={() => completeSet(exIdx, setIdx)}
-                />
-              ))}
+              {ex.sets.map((set, setIdx) => {
+                const activeIdx = ex.sets.findIndex(s => !s.done);
+                return (
+                  <SetRow key={setIdx} set={set} index={setIdx}
+                    unit={ex.unit || profile.unit}
+                    isActive={!set.done && setIdx === activeIdx}
+                    onChange={(newSet) => updateSet(exIdx, setIdx, newSet)}
+                    onComplete={() => completeSet(exIdx, setIdx)}
+                  />
+                );
+              })}
               <button onClick={() => addSet(exIdx)} style={{
                 marginTop: '0.75rem', width: '100%', padding: '0.5rem',
                 borderRadius: 'var(--radius)', border: '1px dashed var(--border)',

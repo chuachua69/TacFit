@@ -13,6 +13,10 @@ export const storage = {
   setPlan: (data) => localStorage.setItem(KEYS.PLAN, JSON.stringify(data)),
 
   getLogs: () => JSON.parse(localStorage.getItem(KEYS.LOGS) || '[]'),
+  removeLog: (sessionId) => {
+    const logs = storage.getLogs().filter(l => l.sessionId !== sessionId);
+    localStorage.setItem(KEYS.LOGS, JSON.stringify(logs));
+  },
   addLog: (log) => {
     const logs = storage.getLogs();
     const idx = logs.findIndex(l => l.sessionId === log.sessionId);

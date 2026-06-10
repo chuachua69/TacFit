@@ -120,6 +120,19 @@ export default function Stats() {
         </div>
       )}
 
+      {/* After week 6 note */}
+      <div style={{
+        padding: '0.75rem 1rem',
+        background: 'var(--accent)10',
+        border: '1px solid var(--accent)30',
+        borderRadius: 'var(--radius)',
+        fontSize: '0.82rem',
+        color: 'var(--text-muted)',
+        lineHeight: 1.5,
+      }}>
+        🎯 After completing all 6 weeks, you'll do a baseline re-test to update your 1RMs and generate a fresh plan.
+      </div>
+
       {/* Weekly summary */}
       <div>
         <div className="label">By Week</div>

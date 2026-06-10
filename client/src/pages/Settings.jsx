@@ -14,6 +14,10 @@ export default function Settings() {
   });
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [baselines, setBaselines] = useState({ ...profile?.baselines });
+  const [baselinesSaved, setBaselinesSaved] = useState(false);
+
+  const setB = (k, v) => setBaselines(b => ({ ...b, [k]: Number(v) || 0 }));
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const barOptions = getBarOptions(form.unit);
@@ -88,25 +92,41 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Current baselines (read-only, editable via assessment) */}
+      {/* Editable baselines */}
       <div>
-        <div className="label">Baselines</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-            Baselines update automatically after your 6-week assessment.
+        <div className="label">Baselines (1RM)</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Edit anytime. Save &amp; Regenerate updates your plan with new weights.
           </div>
-          {profile?.baselines && [
-            ['Squat 1RM', `${profile.baselines.squat} ${profile.unit}`],
-            ['Deadlift 1RM', `${profile.baselines.deadlift} ${profile.unit}`],
-            ['Bench 1RM', `${profile.baselines.bench} ${profile.unit}`],
-            ['OHP 1RM', `${profile.baselines.ohp} ${profile.unit}`],
-            ['Row 1RM', `${profile.baselines.row} ${profile.unit}`],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>{k}</span>
-              <span style={{ fontWeight: 600 }}>{v}</span>
+          {[
+            { key: 'squat', label: 'Squat' },
+            { key: 'deadlift', label: 'Deadlift' },
+            { key: 'bench', label: 'Bench' },
+            { key: 'ohp', label: 'OHP' },
+            { key: 'row', label: 'Row' },
+          ].map(({ key, label }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{label} 1RM</span>
+              <input
+                type="number" inputMode="numeric"
+                value={baselines[key] ?? ''}
+                onChange={e => setB(key, e.target.value)}
+                style={{ width: 80, textAlign: 'center', padding: '0.35rem 0.5rem', fontSize: '0.9rem' }}
+              />
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', width: 28 }}>{profile?.unit || 'kg'}</span>
             </div>
           ))}
+          <button className="btn btn-primary" onClick={() => {
+            const updated = { ...profile, baselines: { ...profile.baselines, ...baselines } };
+            storage.setProfile(updated);
+            const newPlan = generatePlan(updated);
+            storage.setPlan(newPlan);
+            setBaselinesSaved(true);
+            setTimeout(() => setBaselinesSaved(false), 2500);
+          }}>
+            {baselinesSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
+          </button>
         </div>
       </div>
 
