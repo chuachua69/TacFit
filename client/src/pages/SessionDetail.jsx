@@ -1,0 +1,210 @@
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { storage } from '../store/storage';
+import GymLogger from '../components/GymLogger';
+import PlateDisplay from '../components/PlateDisplay';
+import MissedModal from '../components/MissedModal';
+
+const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
+const SLOT_LABEL = { am: 'Morning', pm: 'Evening' };
+
+export default function SessionDetail() {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  const plan = storage.getPlan();
+  const profile = storage.getProfile();
+  const logs = storage.getLogs();
+  const [showMissed, setShowMissed] = useState(false);
+
+  const allSessions = plan?.weeks.flatMap(w => w.sessions) || [];
+  const session = allSessions.find(s => s.id === sessionId);
+  if (!session) return <div className="screen">Session not found</div>;
+
+  const log = logs.find(l => l.sessionId === sessionId);
+  const status = log?.status || session.status;
+
+  const markDone = (gymData) => {
+    storage.addLog({
+      sessionId,
+      status: 'done',
+      completedAt: new Date().toISOString(),
+      ...(gymData ? { gymData } : {}),
+    });
+    navigate(-1);
+  };
+
+  const { workout } = session;
+
+  return (
+    <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem' }}>
+      {showMissed && (
+        <MissedModal session={session} plan={plan} onClose={() => setShowMissed(false)} onDone={() => navigate('/dashboard')} />
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button className="btn btn-ghost" style={{ width: 'auto', padding: '0.4rem 0.75rem' }}
+          onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.2rem' }}>{DISC_EMOJI[session.discipline]}</span>
+            <span className={`tag tag-${session.discipline}`}>{session.discipline}</span>
+            {session.slot && (
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                {SLOT_LABEL[session.slot]}
+              </span>
+            )}
+          </div>
+          <div style={{ fontWeight: 800, fontSize: '1.1rem', marginTop: 2 }}>
+            {workout?.label || workout?.focus || 'Session'}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            {session.date} · Week {session.week}
+          </div>
+        </div>
+      </div>
+
+      {/* Workout content */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+        {/* GYM — interactive logger */}
+        {workout?.type === 'gym' && status === 'pending' && (
+          <GymLogger workout={workout} profile={profile} onSave={markDone} />
+        )}
+
+        {/* GYM — completed view */}
+        {workout?.type === 'gym' && status !== 'pending' && (
+          <div className="card">
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 600 }}>
+              {workout.focus} — Strength
+            </div>
+            {workout.exercises.map((ex, i) => (
+              <div key={i} style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                  <span style={{ fontWeight: 700 }}>{ex.name}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    {ex.reps ? `${ex.sets}×${ex.reps}` : `${ex.sets}×${ex.duration}`}
+                  </span>
+                </div>
+                {ex.weight && (
+                  <>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent)', marginBottom: 6 }}>
+                      {ex.weight} {ex.unit}
+                    </div>
+                    <PlateDisplay targetWeight={ex.weight} barWeight={profile.barWeight} unit={profile.unit} />
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* RUN */}
+        {workout?.type === 'run' && (
+          <div className="card">
+            {workout.distance && (
+              <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem' }}>
+                <div>
+                  <div className="label">Distance</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{workout.distance} km</div>
+                </div>
+                <div>
+                  <div className="label">Target Pace</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{workout.pace}</div>
+                </div>
+              </div>
+            )}
+            {workout.intervals && (
+              <div>
+                <div className="label">Intervals</div>
+                {workout.warmup && <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 6 }}>Warm-up: {workout.warmup}</div>}
+                {workout.intervals.map((iv, i) => (
+                  <div key={i} className="card" style={{ background: 'var(--bg-elevated)', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{iv.reps} × {iv.distance}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Target: {iv.targetPace} · Rest: {iv.rest}</div>
+                  </div>
+                ))}
+                {workout.cooldown && <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Cool-down: {workout.cooldown}</div>}
+              </div>
+            )}
+            {workout.notes && <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 8 }}>{workout.notes}</div>}
+          </div>
+        )}
+
+        {/* SWIM */}
+        {workout?.type === 'swim' && (
+          <div className="card">
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 8 }}>{workout.totalMetres}m total</div>
+            {workout.sets.map((s, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0',
+                borderBottom: i < workout.sets.length - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <span style={{ fontSize: '0.9rem' }}>{s.desc}</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem' }}>{s.pace}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* RUCK */}
+        {workout?.type === 'ruck' && (
+          <div className="card">
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <div>
+                <div className="label">Distance</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{workout.distance} km</div>
+              </div>
+              <div>
+                <div className="label">Load</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{workout.load} {workout.loadUnit}</div>
+              </div>
+              <div>
+                <div className="label">Pace</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{workout.targetPace}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Actions for non-gym pending sessions */}
+      {workout?.type !== 'gym' && status === 'pending' && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowMissed(true)}>
+            Missed / Skip
+          </button>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => markDone()}>
+            Mark Done ✓
+          </button>
+        </div>
+      )}
+
+      {/* Missed/skip for gym too */}
+      {workout?.type === 'gym' && status === 'pending' && (
+        <button className="btn btn-ghost" onClick={() => setShowMissed(true)}>
+          Miss / Skip this session
+        </button>
+      )}
+
+      {/* Completed status */}
+      {status !== 'pending' && (
+        <div className="card" style={{
+          textAlign: 'center',
+          background: status === 'done' ? 'var(--success)15' : 'var(--danger)15',
+          marginTop: 'auto',
+        }}>
+          <span style={{
+            fontWeight: 700,
+            color: status === 'done' ? 'var(--success)' : 'var(--danger)',
+            textTransform: 'uppercase',
+          }}>
+            {status === 'done' ? '✓ Completed' : `✗ ${status}`}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}

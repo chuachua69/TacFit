@@ -1,0 +1,393 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { storage } from '../store/storage';
+import { generatePlan } from '../lib/planEngine';
+import { getBarOptions } from '../lib/plateCalc';
+
+const STEPS = ['basics', 'schedule', 'baselines-lift', 'baselines-cardio', 'review'];
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const DAY_LABELS = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+
+const DEFAULT_SCHEDULE = {
+  mon: { am: true, pm: true },
+  tue: { am: true, pm: true },
+  wed: { am: true, pm: true },
+  thu: { am: true, pm: true },
+  fri: { am: true, pm: true },
+  sat: { am: true, pm: true },
+  sun: { am: false, pm: false },
+};
+
+const FOCUSES = [
+  { value: 'balanced', label: 'Balanced', desc: 'All 4 disciplines equally' },
+  { value: 'run', label: 'Run', desc: 'Improve 2.4km / run endurance' },
+  { value: 'gym', label: 'Strength', desc: 'Build power and muscle' },
+  { value: 'ruck', label: 'Ruck', desc: 'Loaded march capacity' },
+  { value: 'swim', label: 'Swim', desc: 'Water endurance' },
+];
+
+function StepDots({ current }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: '1.5rem' }}>
+      {STEPS.map((s, i) => (
+        <div key={s} style={{
+          width: i === current ? 20 : 6, height: 6,
+          borderRadius: 999,
+          background: i <= current ? 'var(--accent)' : 'var(--border)',
+          transition: 'all 0.2s',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function timeToSeconds(str) {
+  const parts = str.split(':').map(Number);
+  if (parts.length === 2) return parts[0] * 60 + (parts[1] || 0);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0);
+  return 0;
+}
+
+function countSessions(schedule) {
+  return DAYS.reduce((n, d) => n + (schedule[d].am ? 1 : 0) + (schedule[d].pm ? 1 : 0), 0);
+}
+
+export default function Onboarding() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [rmMode, setRmMode] = useState('8rm'); // '1rm' | '8rm'
+  const [form, setForm] = useState({
+    name: '',
+    unit: 'kg',
+    barWeight: 20,
+    focus: 'balanced',
+    schedule: DEFAULT_SCHEDULE,
+    baselines: {
+      squat: '',
+      deadlift: '',
+      bench: '',
+      ohp: '',
+      row: '',
+      run2400: '12:00',
+      swim400: '09:00',
+      ruckPace: '08:00',
+      ruckLoad: '20',
+    },
+  });
+
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+  const setBaseline = (key, val) => setForm(f => ({ ...f, baselines: { ...f.baselines, [key]: val } }));
+  const toggleSlot = (day, slot) => setForm(f => ({
+    ...f,
+    schedule: {
+      ...f.schedule,
+      [day]: { ...f.schedule[day], [slot]: !f.schedule[day][slot] },
+    },
+  }));
+
+  const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
+  const back = () => setStep(s => Math.max(s - 1, 0));
+
+  const finish = () => {
+    // Convert to 1RM if input was 8RM (Brzycki: 1RM = 8RM / 0.80)
+    const toOneRM = (val) => rmMode === '8rm' ? Math.round(Number(val) / 0.80) : Number(val);
+
+    const profile = {
+      name: form.name,
+      unit: form.unit,
+      barWeight: Number(form.barWeight),
+      focus: form.focus,
+      schedule: form.schedule,
+      sessionsPerWeek: countSessions(form.schedule),
+      rmMode,
+      baselines: {
+        squat8rm: Number(form.baselines.squat),
+        deadlift8rm: Number(form.baselines.deadlift),
+        bench8rm: Number(form.baselines.bench),
+        ohp8rm: Number(form.baselines.ohp),
+        row8rm: Number(form.baselines.row),
+        // 1RM equivalents for plan engine
+        squat: toOneRM(form.baselines.squat),
+        deadlift: toOneRM(form.baselines.deadlift),
+        bench: toOneRM(form.baselines.bench),
+        ohp: toOneRM(form.baselines.ohp),
+        row: toOneRM(form.baselines.row),
+        run2400s: timeToSeconds(form.baselines.run2400),
+        swim400s: timeToSeconds(form.baselines.swim400),
+        ruckPaceMinKm: timeToSeconds(form.baselines.ruckPace) / 60,
+        ruckLoadKg: Number(form.baselines.ruckLoad),
+      },
+    };
+    storage.setProfile(profile);
+    const plan = generatePlan(profile);
+    storage.setPlan(plan);
+    navigate('/dashboard');
+  };
+
+  const barOptions = getBarOptions(form.unit);
+  const sessionCount = countSessions(form.schedule);
+
+  return (
+    <div className="screen" style={{ paddingTop: '2rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--accent)' }}>TACFIT</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>Military Fitness Periodisation</div>
+      </div>
+
+      <StepDots current={step} />
+
+      {/* STEP 0: Basics */}
+      {step === 0 && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div className="label">Your Name</div>
+            <input placeholder="e.g. Cpl Smith" value={form.name} onChange={e => set('name', e.target.value)} />
+          </div>
+
+          <div>
+            <div className="label">Weight Unit</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['kg', 'lbs'].map(u => (
+                <button key={u} className={`btn ${form.unit === u ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { set('unit', u); set('barWeight', u === 'kg' ? 20 : 45); }}>
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Barbell Weight</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {barOptions.map(o => (
+                <button key={o.value} className={`btn ${form.barWeight === o.value ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: '1 1 auto', minWidth: 100 }}
+                  onClick={() => set('barWeight', o.value)}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Training Focus</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {FOCUSES.map(f => (
+                <button key={f.value} onClick={() => set('focus', f.value)}
+                  style={{
+                    background: form.focus === f.value ? 'var(--accent)20' : 'var(--bg-card)',
+                    border: `1px solid ${form.focus === f.value ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius)', padding: '0.75rem 1rem',
+                    textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{f.label}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{f.desc}</div>
+                  </div>
+                  {form.focus === f.value && <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button className="btn btn-primary" onClick={next} disabled={!form.name.trim()}>Continue</button>
+        </div>
+      )}
+
+      {/* STEP 1: Schedule grid */}
+      {step === 1 && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 4 }}>Weekly Schedule</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Tap to toggle AM / PM slots. All on by default — adjust to your availability.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: 6, paddingBottom: 4 }}>
+              <div />
+              <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.06em' }}>MORNING</div>
+              <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.06em' }}>EVENING</div>
+            </div>
+
+            {DAYS.map(day => {
+              const { am, pm } = form.schedule[day];
+              const isRest = !am && !pm;
+              return (
+                <div key={day} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr', gap: 6, alignItems: 'center' }}>
+                  <div style={{
+                    fontSize: '0.85rem', fontWeight: 700,
+                    color: isRest ? 'var(--text-muted)' : 'var(--text)',
+                  }}>
+                    {DAY_LABELS[day]}
+                    {isRest && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 400 }}>rest</div>}
+                  </div>
+                  {['am', 'pm'].map(slot => {
+                    const active = form.schedule[day][slot];
+                    return (
+                      <button key={slot} onClick={() => toggleSlot(day, slot)}
+                        style={{
+                          padding: '0.6rem 0', borderRadius: 'var(--radius)',
+                          background: active ? 'var(--accent)20' : 'var(--bg-elevated)',
+                          border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                          color: active ? 'var(--accent)' : 'var(--text-muted)',
+                          fontWeight: 700, fontSize: '0.8rem',
+                          transition: 'all 0.15s',
+                        }}>
+                        {active ? '✓' : '–'}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="card" style={{ background: 'var(--bg-elevated)' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', lineHeight: 1.6 }}>
+              <strong style={{ color: 'var(--accent)' }}>{sessionCount} sessions/week</strong> · {sessionCount * 6} total over 6 weeks · ~{sessionCount * 1.5}h/week
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+            <button className="btn btn-secondary" onClick={back}>Back</button>
+            <button className="btn btn-primary" onClick={next} disabled={sessionCount === 0}>Continue</button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 2: Strength baselines */}
+      {step === 2 && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 4 }}>Strength Baselines</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Enter your lifting baseline in {form.unit}.
+            </div>
+          </div>
+
+          {/* 1RM / 8RM toggle */}
+          <div>
+            <div className="label">Input type</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className={`btn ${rmMode === '8rm' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setRmMode('8rm')} style={{ flex: 1 }}>
+                8RM <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>(preferred)</span>
+              </button>
+              <button className={`btn ${rmMode === '1rm' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setRmMode('1rm')} style={{ flex: 1 }}>
+                1RM
+              </button>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+              {rmMode === '8rm'
+                ? '8RM = the most weight you can lift for exactly 8 reps'
+                : '1RM = your absolute single-rep max'}
+            </div>
+          </div>
+
+          {[
+            { key: 'squat', label: 'Back Squat' },
+            { key: 'deadlift', label: 'Deadlift' },
+            { key: 'bench', label: 'Bench Press' },
+            { key: 'ohp', label: 'Overhead Press' },
+            { key: 'row', label: 'Bent-over Row' },
+          ].map(({ key, label }) => (
+            <div key={key}>
+              <div className="label">{label} {rmMode.toUpperCase()}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="number" inputMode="decimal" placeholder="0"
+                  value={form.baselines[key]}
+                  onChange={e => setBaseline(key, e.target.value)} />
+                <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', minWidth: 30 }}>{form.unit}</span>
+              </div>
+            </div>
+          ))}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+            <button className="btn btn-secondary" onClick={back}>Back</button>
+            <button className="btn btn-primary" onClick={next}>Continue</button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: Cardio baselines */}
+      {step === 3 && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 4 }}>Cardio Baselines</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Format: mm:ss</div>
+          </div>
+
+          {[
+            { key: 'run2400', label: '2.4km Run Time', placeholder: '12:00' },
+            { key: 'swim400', label: '400m Swim Time', placeholder: '09:00' },
+            { key: 'ruckPace', label: 'Ruck Pace (min/km)', placeholder: '08:00' },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <div className="label">{label}</div>
+              <input type="text" inputMode="numeric" placeholder={placeholder}
+                value={form.baselines[key]}
+                onChange={e => setBaseline(key, e.target.value)} />
+            </div>
+          ))}
+
+          <div>
+            <div className="label">Ruck Load ({form.unit})</div>
+            <input type="number" inputMode="decimal" placeholder="20"
+              value={form.baselines.ruckLoad}
+              onChange={e => setBaseline('ruckLoad', e.target.value)} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+            <button className="btn btn-secondary" onClick={back}>Back</button>
+            <button className="btn btn-primary" onClick={next}>Review Plan</button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: Review */}
+      {step === 4 && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 4 }}>Ready to build your plan</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Review your setup before we generate your 6-week block.</div>
+          </div>
+
+          <div className="card">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[
+                ['Name', form.name],
+                ['Focus', FOCUSES.find(f => f.value === form.focus)?.label],
+                ['Sessions/week', `${sessionCount} × 1.5h`],
+                ['Unit', form.unit],
+                ['Bar weight', `${form.barWeight}${form.unit}`],
+                ['Input mode', rmMode.toUpperCase()],
+                [`Squat ${rmMode.toUpperCase()}`, `${form.baselines.squat} ${form.unit}`],
+                [`Deadlift ${rmMode.toUpperCase()}`, `${form.baselines.deadlift} ${form.unit}`],
+                [`Bench ${rmMode.toUpperCase()}`, `${form.baselines.bench} ${form.unit}`],
+                [`OHP ${rmMode.toUpperCase()}`, `${form.baselines.ohp} ${form.unit}`],
+                [`Row ${rmMode.toUpperCase()}`, `${form.baselines.row} ${form.unit}`],
+                ['2.4km run', form.baselines.run2400],
+                ['400m swim', form.baselines.swim400],
+                ['Ruck pace', `${form.baselines.ruckPace}/km @ ${form.baselines.ruckLoad}${form.unit}`],
+              ].map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>{k}</span>
+                  <span style={{ fontWeight: 600 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+            <button className="btn btn-secondary" onClick={back}>Back</button>
+            <button className="btn btn-primary" onClick={finish}>Generate Plan</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
