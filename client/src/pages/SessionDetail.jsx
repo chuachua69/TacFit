@@ -1,13 +1,24 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
-import { charStore } from '../store/character';
+import { charStore, rankFor } from '../store/character';
 import GymLogger from '../components/GymLogger';
 import PlateDisplay from '../components/PlateDisplay';
 import MissedModal from '../components/MissedModal';
+import ShareWorkout from '../components/ShareWorkout';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
 const SLOT_LABEL = { am: 'Morning', pm: 'Evening' };
+
+// Build a one-line stat summary per discipline for the share card
+function statLineFor(workout) {
+  if (!workout) return '';
+  if (workout.type === 'gym') return `${workout.focus} · ${workout.exercises.length} exercises`;
+  if (workout.type === 'run') return workout.distance ? `${workout.distance} km @ ${workout.pace}` : 'Interval session';
+  if (workout.type === 'swim') return `${workout.totalMetres} m`;
+  if (workout.type === 'ruck') return `${workout.distance} km · ${workout.load}${workout.loadUnit} @ ${workout.targetPace}`;
+  return '';
+}
 
 export default function SessionDetail() {
   const { sessionId } = useParams();
@@ -16,6 +27,7 @@ export default function SessionDetail() {
   const profile = storage.getProfile();
   const logs = storage.getLogs();
   const [showMissed, setShowMissed] = useState(false);
+  const [share, setShare] = useState(null);
 
   const allSessions = plan?.weeks.flatMap(w => w.sessions) || [];
   const session = allSessions.find(s => s.id === sessionId);
@@ -31,8 +43,19 @@ export default function SessionDetail() {
       completedAt: new Date().toISOString(),
       ...(gymData ? { gymData } : {}),
     });
-    charStore.addXP(session.discipline);
-    navigate(-1);
+    const { char } = charStore.addXP(session.discipline);
+    const rank = rankFor(char.level);
+    const phase = plan?.weeks?.[session.week - 1]?.name || '';
+    setShare({
+      discipline: session.discipline,
+      emoji: DISC_EMOJI[session.discipline] || '🎖️',
+      title: session.workout?.label || session.workout?.focus || 'Session',
+      statLine: statLineFor(session.workout),
+      sub: `Week ${session.week}${phase ? ' · ' + phase : ''}`,
+      date: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+      level: char.level,
+      rank: rank.title,
+    });
   };
 
   const unmark = () => {
@@ -46,6 +69,9 @@ export default function SessionDetail() {
     <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem' }}>
       {showMissed && (
         <MissedModal session={session} plan={plan} onClose={() => setShowMissed(false)} onDone={() => navigate('/dashboard')} />
+      )}
+      {share && (
+        <ShareWorkout summary={share} onClose={() => { setShare(null); navigate(-1); }} />
       )}
 
       {/* Header */}
