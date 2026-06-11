@@ -1,24 +1,26 @@
 /**
- * Generate an iCalendar (.ics) file from the training plan so it can be
- * imported into Google / Apple / Outlook calendars. No backend needed.
- * Slot times default to AM 07:00 and PM 18:00 (90-min blocks); users can
- * shift individual events in their calendar app afterwards.
+ * Calendar helpers — turn plan sessions into editable events, then export as
+ * an iCalendar (.ics) file or a Google Calendar "add event" link. Fully
+ * client-side, no backend. Session times come from the user's AM/PM prefs
+ * (or 07:00 / 18:00 defaults) and can be overridden per event before export.
  */
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
-const SLOT_START = { am: { h: 7, m: 0 }, pm: { h: 18, m: 0 } };
+export const DEFAULT_TIMES = { am: '07:00', pm: '18:00' };
 const DURATION_MIN = 90;
 
 const pad = n => String(n).padStart(2, '0');
 const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
 
-function localStamp(dateStr, h, m) {
+// 'YYYY-MM-DD' + 'HH:MM' -> 'YYYYMMDDTHHMMSS' (local, floating time)
+function stamp(dateStr, time) {
   const [y, mo, d] = dateStr.split('-');
+  const [h, m] = (time || '07:00').split(':');
   return `${y}${mo}${d}T${pad(h)}${pad(m)}00`;
 }
-
-function addMinutes(dateStr, h, m, add) {
+function endStamp(dateStr, time, durationMin) {
   const [y, mo, d] = dateStr.split('-').map(Number);
-  const dt = new Date(y, mo - 1, d, h, m + add);
+  const [h, m] = (time || '07:00').split(':').map(Number);
+  const dt = new Date(y, mo - 1, d, h, m + durationMin);
   return `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
 }
 
@@ -31,45 +33,71 @@ function describe(workout) {
   return '';
 }
 
-export function buildICS(plan) {
+export function sessionTime(slot, profile) {
+  if (slot === 'pm') return profile?.pmTime || DEFAULT_TIMES.pm;
+  return profile?.amTime || DEFAULT_TIMES.am;
+}
+
+// Build an editable event object from a plan session
+export function sessionToEvent(s, profile, timeOverride) {
+  const emoji = DISC_EMOJI[s.discipline] || '🎯';
+  const title = s.workout?.label || s.workout?.focus || 'Session';
+  return {
+    id: s.id,
+    uid: `tacfit-${s.id}@tacfit.app`,
+    discipline: s.discipline,
+    date: s.date,
+    slot: s.slot,
+    time: timeOverride || sessionTime(s.slot, profile),
+    durationMin: DURATION_MIN,
+    summary: `${emoji} ${s.discipline.toUpperCase()} — ${title}`,
+    description: `Week ${s.week} · ${describe(s.workout)}`,
+  };
+}
+
+export function planToEvents(plan, profile) {
+  return (plan?.weeks || []).flatMap(w => w.sessions).map(s => sessionToEvent(s, profile));
+}
+
+export function buildICS(events) {
   const now = new Date();
-  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
-
+  const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//TacFit//Training Plan//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'X-WR-CALNAME:TacFit Training',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TacFit//Training Plan//EN',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:TacFit Training',
   ];
-
-  const sessions = (plan?.weeks || []).flatMap(w => w.sessions);
-  sessions.forEach(s => {
-    const slot = SLOT_START[s.slot] || SLOT_START.am;
-    const emoji = DISC_EMOJI[s.discipline] || '🎯';
-    const title = s.workout?.label || s.workout?.focus || 'Session';
+  events.forEach(ev => {
     lines.push(
       'BEGIN:VEVENT',
-      `UID:tacfit-${s.id}@tacfit.app`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART:${localStamp(s.date, slot.h, slot.m)}`,
-      `DTEND:${addMinutes(s.date, slot.h, slot.m, DURATION_MIN)}`,
-      `SUMMARY:${esc(`${emoji} ${s.discipline.toUpperCase()} — ${title}`)}`,
-      `DESCRIPTION:${esc(`Week ${s.week} · ${describe(s.workout)}`)}`,
+      `UID:${ev.uid}`,
+      `DTSTAMP:${dtstamp}`,
+      `DTSTART:${stamp(ev.date, ev.time)}`,
+      `DTEND:${endStamp(ev.date, ev.time, ev.durationMin)}`,
+      `SUMMARY:${esc(ev.summary)}`,
+      `DESCRIPTION:${esc(ev.description)}`,
       'END:VEVENT',
     );
   });
-
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');
 }
 
-export function downloadICS(plan, filename = 'tacfit-plan.ics') {
-  const blob = new Blob([buildICS(plan)], { type: 'text/calendar;charset=utf-8' });
+export function downloadICS(events, filename = 'tacfit-plan.ics') {
+  const blob = new Blob([buildICS(events)], { type: 'text/calendar;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+// One-click "Add to Google Calendar" link (opens a pre-filled event)
+export function gcalLink(ev) {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: ev.summary,
+    details: ev.description,
+    dates: `${stamp(ev.date, ev.time)}/${endStamp(ev.date, ev.time, ev.durationMin)}`,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }

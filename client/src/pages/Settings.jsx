@@ -5,7 +5,7 @@ import { getBarOptions } from '../lib/plateCalc';
 import { generatePlan } from '../lib/planEngine';
 import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
 import Collapsible from '../components/Collapsible';
-import { downloadICS } from '../lib/icsExport';
+import { downloadICS, planToEvents } from '../lib/icsExport';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -20,8 +20,18 @@ export default function Settings() {
     age: profile?.age ?? '',
     sex: profile?.sex || '',
     startDate: profile?.startDate || todayStr,
+    amTime: profile?.amTime || '07:00',
+    pmTime: profile?.pmTime || '18:00',
   });
   const [planStartSaved, setPlanStartSaved] = useState(false);
+  const [timesSaved, setTimesSaved] = useState(false);
+
+  const saveTimes = () => {
+    const updated = { ...storage.getProfile(), amTime: form.amTime, pmTime: form.pmTime };
+    storage.setProfile(updated);
+    setTimesSaved(true);
+    setTimeout(() => setTimesSaved(false), 2000);
+  };
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [baselines, setBaselines] = useState({ ...profile?.baselines });
@@ -239,6 +249,27 @@ export default function Settings() {
           </button>
       </Collapsible>
 
+      {/* Session times */}
+      <Collapsible title="Session Times" subtitle="Default morning / evening start">
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Used for calendar exports — when each AM / PM session starts. You can still
+            tweak individual events before adding them to your calendar.
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div className="label">🌅 Morning (AM)</div>
+              <input type="time" value={form.amTime} onChange={e => set('amTime', e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="label">🌙 Evening (PM)</div>
+              <input type="time" value={form.pmTime} onChange={e => set('pmTime', e.target.value)} />
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={saveTimes}>
+            {timesSaved ? 'Saved ✓' : 'Save Times'}
+          </button>
+      </Collapsible>
+
       {/* Plan start date */}
       <Collapsible title="Programme Start" subtitle="When Week 1 begins">
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -267,12 +298,12 @@ export default function Settings() {
       {/* Plan actions */}
       <Collapsible title="Plan" subtitle="Calendar export · regenerate · reset">
           <div>
-            <button className="btn btn-secondary" onClick={() => { const p = storage.getPlan(); if (p) downloadICS(p); }}>
-              📅 Add Schedule to Calendar (.ics)
+            <button className="btn btn-secondary" onClick={() => { const p = storage.getPlan(); if (p) downloadICS(planToEvents(p, storage.getProfile())); }}>
+              📅 Export Full Plan (.ics)
             </button>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
-              Downloads a calendar file — open it to import into Google / Apple / Outlook.
-              Sessions default to 07:00 (AM) and 18:00 (PM); adjust times in your calendar app.
+              Downloads the whole 6-week plan — open it to import into Google / Apple / Outlook.
+              For a single week with adjustable times, use “Export week” on the Plan tab.
             </div>
           </div>
 

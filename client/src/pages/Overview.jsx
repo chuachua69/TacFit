@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import BottomNav from '../components/BottomNav';
+import WeekExport from '../components/WeekExport';
 
 const DISC_COLOR = { run: 'var(--run)', swim: 'var(--swim)', ruck: 'var(--ruck)', gym: 'var(--gym)' };
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
@@ -11,6 +13,7 @@ export default function Overview() {
   const navigate = useNavigate();
   const plan = storage.getPlan();
   const logs = storage.getLogs();
+  const [exportWeek, setExportWeek] = useState(null);
 
   if (!plan) return <div className="screen">No plan found</div>;
 
@@ -101,25 +104,32 @@ export default function Overview() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {plan.weeks.map(week => (
             <div key={week.week}>
-              <button
-                onClick={() => navigate(`/week/${week.week}`)}
-                style={{ width: '100%', textAlign: 'left', marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                    Week {week.week}
-                    <span style={{
-                      marginLeft: 8, padding: '2px 8px', borderRadius: 999,
-                      background: PHASE_COLOR[week.name], fontSize: '0.7rem',
-                      color: 'var(--text-muted)', fontWeight: 600,
-                    }}>
-                      {week.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <button
+                  onClick={() => navigate(`/week/${week.week}`)}
+                  style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                      Week {week.week}
+                      <span style={{
+                        marginLeft: 8, padding: '2px 8px', borderRadius: 999,
+                        background: PHASE_COLOR[week.name], fontSize: '0.7rem',
+                        color: 'var(--text-muted)', fontWeight: 600,
+                      }}>
+                        {week.name}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {week.sessions.filter(s => logs.find(l => l.sessionId === s.id && l.status === 'done')).length}/{week.sessions.length}
                     </span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {week.sessions.filter(s => logs.find(l => l.sessionId === s.id && l.status === 'done')).length}/{week.sessions.length}
-                  </span>
-                </div>
-              </button>
+                </button>
+                <button onClick={() => setExportWeek(week)}
+                  title="Export week to calendar"
+                  style={{ flexShrink: 0, fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent)55', borderRadius: 8, padding: '0.35rem 0.6rem' }}>
+                  📤 Export
+                </button>
+              </div>
 
               {/* Session dots */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -154,6 +164,8 @@ export default function Overview() {
           ))}
         </div>
       </div>
+      {exportWeek && <WeekExport week={exportWeek} onClose={() => setExportWeek(null)} />}
+
       <BottomNav active="overview" />
     </div>
   );

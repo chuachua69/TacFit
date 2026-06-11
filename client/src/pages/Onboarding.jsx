@@ -74,6 +74,8 @@ export default function Onboarding() {
     height: '',
     age: '',
     sex: '',
+    amTime: '07:00',
+    pmTime: '18:00',
     focus: 'balanced',
     schedule: DEFAULT_SCHEDULE,
     baselines: {
@@ -114,6 +116,8 @@ export default function Onboarding() {
       height: Number(form.height) || 0,
       age: Number(form.age) || 0,
       sex: form.sex || '',
+      amTime: form.amTime,
+      pmTime: form.pmTime,
       focus: form.focus,
       schedule: form.schedule,
       sessionsPerWeek: countSessions(form.schedule),
@@ -303,6 +307,23 @@ export default function Onboarding() {
           <div className="card" style={{ background: 'var(--bg-elevated)' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', lineHeight: 1.6 }}>
               <strong style={{ color: 'var(--accent)' }}>{sessionCount} sessions/week</strong> · {sessionCount * 6} total over 6 weeks · ~{sessionCount * 1.5}h/week
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Session Start Times</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+              When your morning &amp; evening sessions usually start (used for calendar exports).
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div className="label">🌅 Morning</div>
+                <input type="time" value={form.amTime} onChange={e => set('amTime', e.target.value)} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div className="label">🌙 Evening</div>
+                <input type="time" value={form.pmTime} onChange={e => set('pmTime', e.target.value)} />
+              </div>
             </div>
           </div>
 
