@@ -1,11 +1,21 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import BottomNav from '../components/BottomNav';
+import { scheduleTestBlock } from '../lib/testBlock';
 
 export default function TestHub() {
   const navigate = useNavigate();
   const opTests = storage.getOperatorTests();
   const lastOp = opTests[opTests.length - 1];
+  const [scheduledMsg, setScheduledMsg] = useState('');
+
+  const schedule = (kind) => {
+    const plan = storage.getPlan();
+    if (!plan) return;
+    storage.setPlan(scheduleTestBlock(plan, kind));
+    setScheduledMsg(`${kind === 'operator' ? 'Operator' : 'Baseline'} test block scheduled into your final week (taper + grouped test days).`);
+  };
 
   const Card = ({ emoji, title, sub, detail, accent, onClick }) => (
     <button className="card" onClick={onClick}
@@ -47,13 +57,29 @@ export default function TestHub() {
         onClick={() => navigate('/baseline')}
       />
 
-      <div style={{
-        padding: '0.75rem 1rem', background: 'var(--bg-elevated)',
-        border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-        fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5,
-      }}>
-        💡 Tests have several events that can’t all be maxed in one day. You can log results
-        on-demand now, or (coming next) auto-schedule a tapered multi-day test block for true scores.
+      {/* Schedule a tapered block */}
+      <div>
+        <div className="label">Schedule a Test Block</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Events can’t all be maxed in one day. This replaces your final <strong>Deload week</strong>
+            with <strong>2 taper days + grouped test days</strong> so each score is fresh. Test-day
+            cards link straight to logging.
+          </div>
+          {scheduledMsg ? (
+            <div style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600 }}>
+              ✓ {scheduledMsg}
+              <button className="btn btn-secondary" style={{ marginTop: 10 }} onClick={() => navigate('/overview')}>
+                View in Plan →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => schedule('operator')}>🎯 Operator block</button>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => schedule('baseline')}>📏 Baseline block</button>
+            </div>
+          )}
+        </div>
       </div>
 
       <BottomNav active="test" />

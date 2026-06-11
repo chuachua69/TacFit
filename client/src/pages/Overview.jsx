@@ -4,8 +4,8 @@ import { storage } from '../store/storage';
 import BottomNav from '../components/BottomNav';
 import WeekExport from '../components/WeekExport';
 
-const DISC_COLOR = { run: 'var(--run)', swim: 'var(--swim)', ruck: 'var(--ruck)', gym: 'var(--gym)' };
-const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
+const DISC_COLOR = { run: 'var(--run)', swim: 'var(--swim)', ruck: 'var(--ruck)', gym: 'var(--gym)', test: 'var(--accent)' };
+const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️', test: '🎯' };
 const STATUS_COLOR = { done: 'var(--success)', missed: 'var(--danger)', skipped: 'var(--text-muted)', pending: 'var(--border)' };
 const PHASE_COLOR = { Build: '#52a8e040', Intensify: '#e0c25240', Peak: '#e0525240', Deload: '#52c87840' };
 

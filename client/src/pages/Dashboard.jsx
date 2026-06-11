@@ -9,7 +9,7 @@ import BulletFX from '../components/BulletFX';
 import PromotionModal from '../components/PromotionModal';
 import MissedModal from '../components/MissedModal';
 
-const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
+const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️', test: '🎯' };
 
 const MESSAGES = {
   rest:     ['Recovery is training too.', 'Rest hard. Train harder.', 'Downtime = uptime.'],

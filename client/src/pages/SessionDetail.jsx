@@ -10,7 +10,7 @@ import FileImport from '../components/FileImport';
 import WarmupCooldown from '../components/WarmupCooldown';
 import { fmtTime } from '../components/WheelPicker';
 
-const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
+const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️', test: '🎯' };
 const SLOT_LABEL = { am: 'Morning', pm: 'Evening' };
 
 // Stat line from real imported activity data
@@ -75,6 +75,58 @@ export default function SessionDetail() {
   };
 
   const { workout } = session;
+
+  // ── Test-block session (taper / grouped test day) ──
+  if (workout?.type === 'test') {
+    const isTest = workout.phase === 'test';
+    const markTestDone = () => {
+      storage.addLog({ sessionId, status: 'done', completedAt: new Date().toISOString() });
+      navigate(-1);
+    };
+    return (
+      <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-ghost" style={{ width: 'auto', padding: '0.4rem 0.75rem' }} onClick={() => navigate(-1)}>← Back</button>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '1.2rem' }}>{workout.phase === 'test' ? '🎯' : workout.phase === 'rest' ? '💤' : '🌙'}</span>
+              <span className="tag" style={{ background: 'var(--accent)20', color: 'var(--accent)' }}>{workout.phase === 'test' ? 'TEST' : workout.phase === 'rest' ? 'REST' : 'TAPER'}</span>
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', marginTop: 2 }}>{workout.title}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{session.date} · Week {session.week}</div>
+          </div>
+        </div>
+
+        <div className="card">
+          {isTest ? (
+            <>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>Events to log today</div>
+              <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {workout.events.map((e, i) => (
+                  <li key={i} style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{e}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>{workout.notes}</div>
+          )}
+        </div>
+
+        {status === 'pending' && <WarmupCooldown discipline="gym" workout={{ focus: 'Upper' }} phase="warmup" />}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+          {isTest && (
+            <button className="btn btn-primary" onClick={() => navigate(workout.link)}>
+              Open {workout.testKind === 'baseline' ? 'Baseline' : 'Operator'} to log results →
+            </button>
+          )}
+          <button className={`btn ${isTest ? 'btn-secondary' : 'btn-primary'}`} onClick={markTestDone}>
+            {status !== 'pending' ? '✓ Completed' : 'Mark Day Done ✓'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem' }}>
