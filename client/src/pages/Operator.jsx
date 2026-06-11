@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import { EVENTS, scoreAssessment } from '../lib/operatorScore';
+import EventTimer from '../components/EventTimer';
 
 export default function Operator() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function Operator() {
     return init;
   });
   const [savedMsg, setSavedMsg] = useState(false);
+  const [timerEvent, setTimerEvent] = useState(null);
 
   const setVal = (k, v) => setValues(s => ({ ...s, [k]: v }));
   const setLoad = (k, v) => setLoads(s => ({ ...s, [k]: v }));
@@ -53,6 +55,14 @@ export default function Operator() {
           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>5-event fitness test protocol</div>
         </div>
       </div>
+
+      {timerEvent && (
+        <EventTimer
+          label={`${timerEvent.n}. ${timerEvent.name}`}
+          phases={timerEvent.timer}
+          onClose={() => setTimerEvent(null)}
+        />
+      )}
 
       {/* Live result */}
       <div className="card" style={{
@@ -144,7 +154,18 @@ export default function Operator() {
             )}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: '0.78rem' }}>
+          {ev.timer && (
+            <button onClick={() => setTimerEvent(ev)}
+              style={{
+                marginTop: 10, width: '100%', padding: '0.55rem', borderRadius: 'var(--radius)',
+                background: 'var(--accent)15', border: '1px solid var(--accent)40',
+                color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem',
+              }}>
+              ▶ Start {ev.timer.length > 1 ? '4 × 90s rounds' : '2:30 timer'}
+            </button>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontSize: '0.78rem' }}>
             <span style={{ color: values[ev.key] === '' ? 'var(--text-muted)' : ev.met ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
               {values[ev.key] === '' ? '—' : ev.met ? '✓ Baseline met' : '✗ Below baseline'}
             </span>

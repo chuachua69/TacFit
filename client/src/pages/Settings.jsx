@@ -4,6 +4,7 @@ import { storage } from '../store/storage';
 import { getBarOptions } from '../lib/plateCalc';
 import { generatePlan } from '../lib/planEngine';
 import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
+import Collapsible from '../components/Collapsible';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -75,9 +76,7 @@ export default function Settings() {
       </div>
 
       {/* Profile */}
-      <div>
-        <div className="label">Profile</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <Collapsible title="Profile" subtitle="Name · unit · body metrics" defaultOpen>
           <div>
             <div className="label">Name</div>
             <input value={form.name} onChange={e => set('name', e.target.value)} />
@@ -127,7 +126,7 @@ export default function Settings() {
               <input type="number" inputMode="numeric" placeholder="Age" style={{ flex: 1 }}
                 value={form.age} onChange={e => set('age', e.target.value)} />
               <div style={{ flex: 2, display: 'flex', gap: 6 }}>
-                {['M', 'F', '—'].map(s => (
+                {['M', 'F'].map(s => (
                   <button key={s} type="button"
                     className={`btn ${form.sex === s ? 'btn-primary' : 'btn-secondary'}`}
                     style={{ flex: 1, padding: '0.6rem 0' }}
@@ -142,13 +141,10 @@ export default function Settings() {
           <button className="btn btn-primary" onClick={saveProfile}>
             {saved ? 'Saved ✓' : 'Save Changes'}
           </button>
-        </div>
-      </div>
+      </Collapsible>
 
       {/* Editable baselines */}
-      <div>
-        <div className="label">Baselines (1RM)</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <Collapsible title="Baselines (1RM)" subtitle="Squat · deadlift · bench · OHP · row">
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Edit anytime. Save &amp; Regenerate updates your plan with new weights.
           </div>
@@ -180,13 +176,10 @@ export default function Settings() {
           }}>
             {baselinesSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
           </button>
-        </div>
-      </div>
+      </Collapsible>
 
       {/* Cardio baselines */}
-      <div>
-        <div className="label">Cardio Baselines</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <Collapsible title="Cardio Baselines" subtitle="Run · swim · ruck pace & load">
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Run, swim &amp; ruck targets. Scroll the wheels or tap ▲ ▼. Save &amp; Regenerate
             updates run/swim/ruck paces in your plan.
@@ -243,13 +236,10 @@ export default function Settings() {
           <button className="btn btn-primary" onClick={() => saveBaselines(setCardioSaved)}>
             {cardioSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
           </button>
-        </div>
-      </div>
+      </Collapsible>
 
       {/* Plan start date */}
-      <div>
-        <div className="label">Programme Start</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <Collapsible title="Programme Start" subtitle="When Week 1 begins">
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Pick the Monday-of-week you want Week 1 (Build) to begin. The 6-week
             plan is laid out forward from here.
@@ -271,13 +261,10 @@ export default function Settings() {
           }}>
             {planStartSaved ? 'Plan Rescheduled ✓' : 'Set Start Date & Build Plan'}
           </button>
-        </div>
-      </div>
+      </Collapsible>
 
       {/* Plan actions */}
-      <div>
-        <div className="label">Plan</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <Collapsible title="Plan" subtitle="Regenerate or reset">
           <button className="btn btn-secondary" onClick={resetPlan}>
             Regenerate Plan (keep baselines)
           </button>
@@ -298,8 +285,7 @@ export default function Settings() {
               </div>
             </div>
           )}
-        </div>
-      </div>
+      </Collapsible>
 
       <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', paddingBottom: '1rem' }}>
         TACFIT · All data stored on this device

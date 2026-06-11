@@ -5,6 +5,13 @@
  * required cumulative bonus points to classify.
  */
 
+// 4 rounds of 90s work / 60s rest (no rest after the final round)
+const shuttlePhases = [];
+for (let i = 0; i < 4; i++) {
+  shuttlePhases.push({ name: `Work ${i + 1}`, seconds: 90 });
+  if (i < 3) shuttlePhases.push({ name: 'Rest', seconds: 60 });
+}
+
 export const EVENTS = [
   {
     key: 'hipOverhead',
@@ -16,6 +23,7 @@ export const EVENTS = [
     perUnit: 1.0,
     hasLoad: true,
     loadOptions: [40, 30, 20],
+    timer: [{ name: 'Clean & Press', seconds: 150 }],
   },
   {
     key: 'lunges',
@@ -27,6 +35,7 @@ export const EVENTS = [
     perUnit: 0.5,
     hasLoad: true,
     loadOptions: [40, 30, 20],
+    timer: [{ name: 'Lunges', seconds: 150 }],
   },
   {
     key: 'bench',
@@ -56,6 +65,7 @@ export const EVENTS = [
     unit: 'sprints',
     baseline: 40,
     perUnit: 2.0,
+    timer: shuttlePhases,
   },
 ];
 

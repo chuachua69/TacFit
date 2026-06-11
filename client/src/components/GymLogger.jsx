@@ -86,79 +86,72 @@ function defaultSets(ex, mult = 1) {
 }
 
 const GRID = {
-  weighted:   '26px 24px 1fr 1fr 38px 34px',
-  bodyweight: '26px 24px 1fr 1fr 38px 34px',
-  timed:      '26px 24px 1fr 38px 34px',
+  weighted:   '40px 1fr 1fr 50px 38px',
+  bodyweight: '40px 1fr 1fr 50px 38px',
+  timed:      '40px 1fr 50px 38px',
 };
 
-function NumField({ value, onChange, suffix, inputMode = 'numeric', step }) {
+function headersFor(kind, unit) {
+  if (kind === 'timed') return ['Set', 'Seconds', 'RPE', ''];
+  if (kind === 'bodyweight') return ['Set', 'Reps', `+${unit}`, 'RPE', ''];
+  return ['Set', unit, 'Reps', 'RPE', ''];
+}
+
+function Field({ value, onChange, inputMode = 'numeric', step, placeholder = '0', max }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-      <input type="number" inputMode={inputMode} step={step} value={value ?? ''}
-        onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
-        style={{ padding: '0.35rem 0.4rem', fontSize: '0.9rem', textAlign: 'center', minWidth: 0 }} />
-      <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>{suffix}</span>
-    </div>
+    <input type="number" inputMode={inputMode} step={step} max={max} placeholder={placeholder}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+      style={{ width: '100%', padding: '0.5rem 0.3rem', fontSize: '0.95rem', textAlign: 'center', fontWeight: 600 }} />
   );
 }
 
-function SetRow({ set, index, kind, onChange, onComplete, unit, isActive }) {
+function SetRow({ set, index, kind, onChange, onComplete, isActive }) {
   const style = SET_TYPE_STYLE[set.type];
   return (
     <div style={{
-      display: 'grid', gridTemplateColumns: GRID[kind], gap: 6, alignItems: 'center',
-      padding: '0.5rem 0', opacity: set.done ? 0.45 : 1,
+      display: 'grid', gridTemplateColumns: GRID[kind], gap: 8, alignItems: 'center',
+      padding: '0.5rem 0', opacity: set.done ? 0.5 : 1,
       borderBottom: '1px solid var(--border)',
       borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-      paddingLeft: isActive ? '0.4rem' : 0,
+      paddingLeft: isActive ? '0.45rem' : 0,
       background: isActive ? 'var(--accent)08' : 'transparent',
       borderRadius: isActive ? 4 : 0, transition: 'border-left-color 0.2s',
     }}>
       <button onClick={() => {
         const idx = SET_TYPES.indexOf(set.type);
         onChange({ ...set, type: SET_TYPES[(idx + 1) % SET_TYPES.length] });
-      }} style={{
-        width: 26, height: 26, borderRadius: 6, background: style.bg, color: style.color,
-        fontWeight: 800, fontSize: '0.7rem', border: 'none', flexShrink: 0,
+      }} title="Tap to change set type" style={{
+        height: 32, borderRadius: 6, background: style.bg, color: style.color,
+        fontWeight: 800, fontSize: '0.72rem', border: 'none',
       }}>
-        {style.label}
+        {style.label}{index + 1}
       </button>
-
-      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>#{index + 1}</span>
 
       {kind === 'weighted' && (
         <>
-          <NumField value={set.weight} suffix={unit} inputMode="decimal" step="2.5"
-            onChange={v => onChange({ ...set, weight: v })} />
-          <NumField value={set.reps} suffix="reps"
-            onChange={v => onChange({ ...set, reps: v })} />
+          <Field value={set.weight} inputMode="decimal" step="2.5" onChange={v => onChange({ ...set, weight: v })} />
+          <Field value={set.reps} onChange={v => onChange({ ...set, reps: v })} />
         </>
       )}
-
       {kind === 'bodyweight' && (
         <>
-          <NumField value={set.reps} suffix="reps"
-            onChange={v => onChange({ ...set, reps: v })} />
-          <NumField value={set.addedWeight} suffix={`+${unit}`} inputMode="decimal" step="2.5"
-            onChange={v => onChange({ ...set, addedWeight: v })} />
+          <Field value={set.reps} onChange={v => onChange({ ...set, reps: v })} />
+          <Field value={set.addedWeight} inputMode="decimal" step="2.5" onChange={v => onChange({ ...set, addedWeight: v })} />
         </>
       )}
-
       {kind === 'timed' && (
-        <NumField value={set.seconds} suffix="sec"
-          onChange={v => onChange({ ...set, seconds: v })} />
+        <Field value={set.seconds} onChange={v => onChange({ ...set, seconds: v })} />
       )}
 
-      <input type="number" inputMode="numeric" min={1} max={10} placeholder="RPE" value={set.rpe ?? ''}
-        onChange={e => onChange({ ...set, rpe: e.target.value === '' ? null : Number(e.target.value) })}
-        style={{ padding: '0.35rem 0.3rem', fontSize: '0.78rem', textAlign: 'center', minWidth: 0 }} />
+      <Field value={set.rpe} max={10} placeholder="–" onChange={v => onChange({ ...set, rpe: v })} />
 
       <button onClick={() => onComplete(set)} style={{
-        width: 34, height: 34, borderRadius: 8,
+        height: 36, borderRadius: 8,
         background: set.done ? 'var(--success)20' : 'var(--bg-elevated)',
         border: `2px solid ${set.done ? 'var(--success)' : 'var(--border)'}`,
         color: set.done ? 'var(--success)' : 'var(--text-muted)',
-        fontWeight: 800, fontSize: '1rem', flexShrink: 0,
+        fontWeight: 800, fontSize: '1rem',
       }}>
         {set.done ? '✓' : '○'}
       </button>
@@ -339,9 +332,16 @@ export default function GymLogger({ workout, profile, onSave }) {
 
             {expandedEx === exIdx && (
               <>
+                {/* Column header (per-exercise so labels match the metric) */}
+                <div style={{ display: 'grid', gridTemplateColumns: GRID[kind], gap: 8, padding: '0 0 2px' }}>
+                  {headersFor(kind, ex.unit || profile.unit).map((h, i) => (
+                    <div key={i} style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.03em' }}>
+                      {h}
+                    </div>
+                  ))}
+                </div>
                 {ex.sets.map((set, setIdx) => (
                   <SetRow key={setIdx} set={set} index={setIdx} kind={kind}
-                    unit={ex.unit || profile.unit}
                     isActive={!set.done && setIdx === activeIdx}
                     onChange={(newSet) => updateSet(exIdx, setIdx, newSet)}
                     onComplete={() => completeSet(exIdx, setIdx)}

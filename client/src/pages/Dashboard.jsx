@@ -277,9 +277,12 @@ export default function Dashboard() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: '1.2rem' }}>{DISC_EMOJI[s.discipline]}</span>
                         <span className={`tag tag-${s.discipline}`}>{s.discipline}</span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.slot === 'am' ? 'Morning' : 'Evening'}</span>
                       </div>
                       <div style={{ fontWeight: 700 }}>{s.workout?.label || s.workout?.focus || 'Session'}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 3 }}>
+                        📅 {new Date(s.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {' · '}{s.slot === 'am' ? '🌅 Morning' : '🌙 Evening'}
+                      </div>
                     </div>
                     <div style={{ fontSize: '1.4rem', color: isDone ? 'var(--success)' : 'var(--accent)' }}>
                       {isDone ? '✓' : '→'}

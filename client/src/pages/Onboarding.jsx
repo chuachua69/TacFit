@@ -209,7 +209,7 @@ export default function Onboarding() {
               <input type="number" inputMode="numeric" placeholder="Age" style={{ flex: 1 }}
                 value={form.age} onChange={e => set('age', e.target.value)} />
               <div style={{ flex: 2, display: 'flex', gap: 6 }}>
-                {['M', 'F', '—'].map(s => (
+                {['M', 'F'].map(s => (
                   <button key={s} type="button"
                     className={`btn ${form.sex === s ? 'btn-primary' : 'btn-secondary'}`}
                     style={{ flex: 1, padding: '0.6rem 0' }}
