@@ -214,9 +214,27 @@ a {
 .limb-legL { transform-origin: 38px 90px; animation: legBack  1.15s ease-in-out infinite; }
 .limb-legR { transform-origin: 62px 90px; animation: legFwd   1.15s ease-in-out infinite; }
 
+/* Speech bubble — pops in, then paces horizontally in lock-step with the avatar.
+   Outer element translates (matches tacWalk's X); inner element does the pop. */
+@keyframes tacBubbleWalk {
+  0%   { transform: translateX(calc(var(--shift, 12px) * -1)); }
+  46%  { transform: translateX(var(--shift, 12px)); }
+  50%  { transform: translateX(var(--shift, 12px)); }
+  96%  { transform: translateX(calc(var(--shift, 12px) * -1)); }
+  100% { transform: translateX(calc(var(--shift, 12px) * -1)); }
+}
+@keyframes tacBubblePop {
+  0%   { opacity: 0; transform: translateY(7px) scale(0.6); }
+  55%  { opacity: 1; transform: translateY(0)   scale(1.08); }
+  100% { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.tac-bubble-follow { animation: tacBubbleWalk 11s ease-in-out infinite; will-change: transform; }
+.tac-bubble-pop    { animation: tacBubblePop 0.5s cubic-bezier(.2,1.5,.4,1) both; transform-origin: 50% 120%; }
+
 @media (prefers-reduced-motion: reduce) {
   .tac-bob, .tac-walk, .tac-fidget,
-  .limb-armL, .limb-armR, .limb-legL, .limb-legR { animation: none; }
+  .limb-armL, .limb-armR, .limb-legL, .limb-legR,
+  .tac-bubble-follow, .tac-bubble-pop { animation: none; }
 }
 
 /* ─────────────────────────────────────────────

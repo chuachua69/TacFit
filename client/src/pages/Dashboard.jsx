@@ -10,6 +10,7 @@ import PromotionModal from '../components/PromotionModal';
 import MissedModal from '../components/MissedModal';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️', test: '🎯' };
+const AVATAR_SIZE = 1.8; // shared by the avatar SVG and the speech-bubble follow offset
 
 const MESSAGES = {
   rest:     ['Recovery is training too.', 'Rest hard. Train harder.', 'Downtime = uptime.'],
@@ -39,13 +40,14 @@ function getCurrentWeek(plan, logs) {
   return plan.weeks[plan.weeks.length - 1];
 }
 
-function pickMessage(sessions, logs) {
-  if (!sessions.length) return MESSAGES.rest[0];
+// Which set of lines the avatar draws from, given today's state. Returns a
+// stable primitive key (used as the bubble-cycle effect dependency).
+function moodFor(sessions, logs) {
+  if (!sessions.length) return 'rest';
   const allDone = sessions.every(s => logs.find(l => l.sessionId === s.id && l.status === 'done'));
-  if (allDone) return MESSAGES.done[Math.floor(Math.random() * MESSAGES.done.length)];
+  if (allDone) return 'done';
   const next = sessions.find(s => !logs.find(l => l.sessionId === s.id && l.status === 'done'));
-  const pool = MESSAGES[next?.discipline] || MESSAGES.rest;
-  return pool[Math.floor(Date.now() / 86400000) % pool.length];
+  return MESSAGES[next?.discipline] ? next.discipline : 'rest';
 }
 
 export default function Dashboard() {
@@ -53,6 +55,7 @@ export default function Dashboard() {
   const plan = storage.getPlan();
   const profile = storage.getProfile();
   const [showWellness, setShowWellness] = useState(false);
+  const [editWellness, setEditWellness] = useState(false);
   const [char, setChar] = useState(charStore.get());
   const [promo, setPromo] = useState(null);
   const [reschedule, setReschedule] = useState(false);
@@ -80,8 +83,17 @@ export default function Dashboard() {
   const todaySessions = getTodaySessions(plan);
   const progress = getCurrentWeek(plan, logs);
   const today = new Date().toISOString().split('T')[0];
-  const message = pickMessage(todaySessions, logs);
   const levelPct = charStore.levelProgress(char) * 100;
+
+  // Speech bubble — cycle through the mood's lines so the avatar feels alive.
+  const mood = moodFor(todaySessions, logs);
+  const pool = MESSAGES[mood] || MESSAGES.rest;
+  const [bubbleIdx, setBubbleIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setBubbleIdx(i => i + 1), 9000);
+    return () => clearInterval(id);
+  }, [mood]);
+  const message = pool[bubbleIdx % pool.length];
 
   // Overdue: past sessions with no log at all
   const allSessions = plan?.weeks.flatMap(w => w.sessions) || [];
@@ -95,7 +107,10 @@ export default function Dashboard() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: '1.25rem', paddingBottom: '5rem' }}>
       <BulletFX />
-      {showWellness && <WellnessModal onClose={() => setShowWellness(false)} />}
+      {showWellness && <WellnessModal onClose={() => { setShowWellness(false); setRefresh(r => r + 1); }} />}
+      {editWellness && (
+        <WellnessModal initial={wellness} onClose={() => { setEditWellness(false); setRefresh(r => r + 1); }} />
+      )}
       {promo && (
         <PromotionModal
           fromLevel={promo.fromLevel}
@@ -125,48 +140,52 @@ export default function Dashboard() {
           <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 1 }}>{profile?.name || 'Soldier'}</div>
         </div>
         {wellness && (
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Check-in</div>
+          <button onClick={() => setEditWellness(true)}
+            style={{ textAlign: 'right', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Check-in <span style={{ color: 'var(--accent)' }}>✎</span>
+            </div>
             <div style={{ fontSize: '0.85rem' }}>😴 {wellness.sleep}h &nbsp; 💪 {wellness.fatigue}/5</div>
-          </div>
+          </button>
         )}
       </div>
 
       {/* Character section */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '0.5rem', paddingBottom: '1rem' }}>
-        {/* Speech bubble */}
-        <div style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '0.5rem 1rem',
-          fontSize: '0.82rem',
-          color: 'var(--text-dim)',
-          maxWidth: 220,
-          textAlign: 'center',
-          marginBottom: 8,
-          position: 'relative',
-        }}>
-          {message}
-          <div style={{
-            position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
-            width: 0, height: 0,
-            borderLeft: '7px solid transparent',
-            borderRight: '7px solid transparent',
-            borderTop: '8px solid var(--border)',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
-            width: 0, height: 0,
-            borderLeft: '6px solid transparent',
-            borderRight: '6px solid transparent',
-            borderTop: `7px solid var(--bg-elevated)`,
-          }} />
+        {/* Speech bubble — pops in, then paces horizontally with the avatar */}
+        <div className="tac-bubble-follow" style={{ '--shift': `${AVATAR_SIZE * 7}px`, marginBottom: 8 }}>
+          <div key={message} className="tac-bubble-pop" style={{
+            position: 'relative',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: '0.5rem 1rem',
+            fontSize: '0.82rem',
+            color: 'var(--text-dim)',
+            maxWidth: 220,
+            textAlign: 'center',
+          }}>
+            {message}
+            <div style={{
+              position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
+              width: 0, height: 0,
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
+              borderTop: '8px solid var(--border)',
+            }} />
+            <div style={{
+              position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+              width: 0, height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: `7px solid var(--bg-elevated)`,
+            }} />
+          </div>
         </div>
 
         <PixelCharacter
           equipped={char.equipped}
-          size={1.8}
+          size={AVATAR_SIZE}
           level={char.level}
           xp={char.xp}
           maxXp={LEVEL_XP[char.level + 1] ?? 9999}

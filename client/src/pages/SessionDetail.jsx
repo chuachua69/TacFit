@@ -8,6 +8,7 @@ import MissedModal from '../components/MissedModal';
 import ShareWorkout from '../components/ShareWorkout';
 import FileImport from '../components/FileImport';
 import WarmupCooldown from '../components/WarmupCooldown';
+import TestDayLogger from '../components/TestDayLogger';
 import { fmtTime } from '../components/WheelPicker';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️', test: '🎯' };
@@ -79,12 +80,13 @@ export default function SessionDetail() {
   // ── Test-block session (taper / grouped test day) ──
   if (workout?.type === 'test') {
     const isTest = workout.phase === 'test';
-    const markTestDone = () => {
-      storage.addLog({ sessionId, status: 'done', completedAt: new Date().toISOString() });
+    const interactive = isTest && !!workout.mode;   // new structured, in-app logging
+    const markTestDone = (result) => {
+      storage.addLog({ sessionId, status: 'done', completedAt: new Date().toISOString(), ...(result ? { testResult: result } : {}) });
       navigate(-1);
     };
     return (
-      <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem' }}>
+      <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem', paddingBottom: '3rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="btn btn-ghost" style={{ width: 'auto', padding: '0.4rem 0.75rem' }} onClick={() => navigate(-1)}>← Back</button>
           <div>
@@ -112,18 +114,47 @@ export default function SessionDetail() {
           )}
         </div>
 
-        {status === 'pending' && <WarmupCooldown discipline="gym" workout={{ focus: 'Upper' }} phase="warmup" />}
+        {/* Interactive in-app logger — runs the test like a real workout */}
+        {interactive && status === 'pending' && (
+          <>
+            {workout.mode !== 'cardio' && <WarmupCooldown discipline="gym" workout={{ focus: 'Test' }} phase="warmup" />}
+            <TestDayLogger workout={workout} profile={profile} onComplete={markTestDone} />
+          </>
+        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
-          {isTest && (
+        {/* Legacy fallback for test days scheduled before structured logging */}
+        {isTest && !interactive && status === 'pending' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
             <button className="btn btn-primary" onClick={() => navigate(workout.link)}>
               Open {workout.testKind === 'baseline' ? 'Baseline' : 'Operator'} to log results →
             </button>
-          )}
-          <button className={`btn ${isTest ? 'btn-secondary' : 'btn-primary'}`} onClick={markTestDone}>
-            {status !== 'pending' ? '✓ Completed' : 'Mark Day Done ✓'}
-          </button>
-        </div>
+            <button className="btn btn-secondary" onClick={() => markTestDone()}>Mark Day Done ✓</button>
+          </div>
+        )}
+
+        {/* Taper / rest day */}
+        {!isTest && status === 'pending' && (
+          <>
+            {workout.phase === 'taper' && <WarmupCooldown discipline="gym" workout={{ focus: 'Mobility' }} phase="warmup" />}
+            <button className="btn btn-primary" style={{ marginTop: 'auto' }} onClick={() => markTestDone()}>Mark Day Done ✓</button>
+          </>
+        )}
+
+        {/* Completed view */}
+        {status !== 'pending' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+            <div className="card" style={{ textAlign: 'center', background: 'var(--success)15' }}>
+              <span style={{ fontWeight: 700, color: 'var(--success)', textTransform: 'uppercase' }}>✓ Completed</span>
+              {log?.testResult?.summary && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: 4 }}>{log.testResult.summary}</div>
+              )}
+            </div>
+            <button className="btn btn-ghost" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+              onClick={() => { storage.removeLog(sessionId); navigate(-1); }}>
+              ↩ Unmark / Revert to pending
+            </button>
+          </div>
+        )}
       </div>
     );
   }

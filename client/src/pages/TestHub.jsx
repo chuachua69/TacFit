@@ -13,7 +13,14 @@ export default function TestHub() {
   const schedule = (kind) => {
     const plan = storage.getPlan();
     if (!plan) return;
-    storage.setPlan(scheduleTestBlock(plan, kind));
+    const newPlan = scheduleTestBlock(plan, kind);
+    // Test days reuse positional IDs (w{week}t{i}) in the final week, so a
+    // re-schedule would inherit the previous block's completion logs. Clear the
+    // final week's logs + any operator draft so the new block starts fresh.
+    const lastWeek = newPlan.weeks[newPlan.weeks.length - 1];
+    lastWeek.sessions.forEach(s => storage.removeLog(s.id));
+    storage.clearOperatorDraft();
+    storage.setPlan(newPlan);
     setScheduledMsg(`${kind === 'operator' ? 'Operator' : 'Baseline'} test block scheduled into your final week (taper + grouped test days).`);
   };
 

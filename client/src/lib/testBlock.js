@@ -4,16 +4,25 @@
  *   2 taper/light days → then grouped test days → leftover days = rest.
  * Test-day sessions link out to the Operator / Baseline logging pages.
  */
+// Each test day carries a `mode` + structured keys so the in-app logger can run
+// it like a real workout (plates, rest timer, live scoring) and feed results
+// straight back into baselines / operator history. `events` are display labels.
 export const TEST_DAYS = {
   operator: [
-    { title: 'Test Day 1 · Power', events: ['Hip to Overhead (Clean & Press) — 2:30', 'Alternate Leg Lunges — 2:30'] },
-    { title: 'Test Day 2 · Upper Max', events: ['Bench Press @ bodyweight — max reps', 'Weighted Pull-Ups — max reps'] },
-    { title: 'Test Day 3 · Conditioning', events: ['Shuttle Sprints — 4 × 90s (60s rest)'] },
+    { title: 'Test Day 1 · Power', mode: 'operator', eventKeys: ['hipOverhead', 'lunges'],
+      events: ['Hip to Overhead (Clean & Press)', 'Alternate Leg Lunges'] },
+    { title: 'Test Day 2 · Upper Max', mode: 'operator', eventKeys: ['bench', 'pullups'],
+      events: ['Bench Press @ bodyweight — max reps', 'Weighted Pull-Ups — max reps'] },
+    { title: 'Test Day 3 · Conditioning', mode: 'operator', eventKeys: ['shuttles'],
+      events: ['Shuttle Sprints — 4 × 90s (60s rest)'] },
   ],
   baseline: [
-    { title: 'Test Day 1 · Lower', events: ['Back Squat — heavy single/triple', 'Deadlift — heavy single/triple'] },
-    { title: 'Test Day 2 · Upper', events: ['Bench Press', 'Overhead Press', 'Bent-over Row', 'Pull-ups — max'] },
-    { title: 'Test Day 3 · Cardio', events: ['2.4km Run', '400m Swim', 'Ruck pace check'] },
+    { title: 'Test Day 1 · Lower', mode: 'lift', lifts: ['squat', 'deadlift'],
+      events: ['Back Squat — work up to a heavy set', 'Deadlift — work up to a heavy set'] },
+    { title: 'Test Day 2 · Upper', mode: 'lift', lifts: ['bench', 'ohp', 'row', 'pullups'],
+      events: ['Bench Press', 'Overhead Press', 'Bent-over Row', 'Pull-ups — max'] },
+    { title: 'Test Day 3 · Cardio', mode: 'cardio', cardio: ['run', 'swim', 'ruck'],
+      events: ['2.4km Run', '400m Swim', 'Ruck pace check'] },
   ],
 };
 
@@ -41,7 +50,10 @@ export function scheduleTestBlock(plan, kind) {
     const di = i - taperCount;
     if (di < testCount) {
       const d = days[di];
-      return { ...base, workout: { type: 'test', phase: 'test', testKind: kind, title: d.title, events: d.events, link } };
+      return { ...base, workout: {
+        type: 'test', phase: 'test', testKind: kind, mode: d.mode, title: d.title,
+        events: d.events, lifts: d.lifts, cardio: d.cardio, eventKeys: d.eventKeys, link,
+      } };
     }
     return { ...base, workout: { type: 'test', phase: 'rest', title: 'Rest', notes: 'Recover before/after testing.' } };
   });

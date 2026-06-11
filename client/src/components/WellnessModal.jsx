@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { storage } from '../store/storage';
 
-export default function WellnessModal({ onClose }) {
-  const [sleep, setSleep] = useState(7);
-  const [fatigue, setFatigue] = useState(3);
-  const [soreness, setSoreness] = useState(2);
+export default function WellnessModal({ onClose, initial }) {
+  const editing = !!initial;
+  const [sleep, setSleep] = useState(initial?.sleep ?? 7);
+  const [fatigue, setFatigue] = useState(initial?.fatigue ?? 3);
+  const [soreness, setSoreness] = useState(initial?.soreness ?? 2);
 
   const submit = () => {
     const today = new Date().toISOString().split('T')[0];
     storage.addWellness({ date: today, sleep, fatigue, soreness });
-    onClose();
+    onClose(true);
   };
 
   const fatigueLabel = ['', 'Fresh', 'Good', 'Moderate', 'Tired', 'Exhausted'];
@@ -32,9 +33,11 @@ export default function WellnessModal({ onClose }) {
       }}>
         <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 999, margin: '0 auto 1.25rem' }} />
 
-        <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 4 }}>Morning Check-in</div>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 4 }}>
+          {editing ? 'Edit Check-in' : 'Morning Check-in'}
+        </div>
         <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-          This tunes today's session intensity.
+          {editing ? 'Fix a mis-tap — this re-tunes today’s session intensity.' : 'This tunes today’s session intensity.'}
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
@@ -91,7 +94,14 @@ export default function WellnessModal({ onClose }) {
           </div>
         </div>
 
-        <button className="btn btn-primary" onClick={submit}>Start Day</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {editing && (
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => onClose(false)}>Cancel</button>
+          )}
+          <button className="btn btn-primary" style={{ flex: editing ? 2 : 1 }} onClick={submit}>
+            {editing ? 'Save Changes' : 'Start Day'}
+          </button>
+        </div>
       </div>
     </div>
   );

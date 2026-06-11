@@ -4,6 +4,7 @@ const KEYS = {
   LOGS: 'tacfit_logs',
   WELLNESS: 'tacfit_wellness',
   OPERATOR: 'tacfit_operator',
+  OPDRAFT: 'tacfit_operator_draft',
 };
 
 export const storage = {
@@ -46,6 +47,11 @@ export const storage = {
     all.push(test);
     localStorage.setItem(KEYS.OPERATOR, JSON.stringify(all));
   },
+
+  // In-progress operator attempt, accumulated across multi-day test blocks
+  getOperatorDraft: () => JSON.parse(localStorage.getItem(KEYS.OPDRAFT) || 'null'),
+  setOperatorDraft: (d) => localStorage.setItem(KEYS.OPDRAFT, JSON.stringify(d)),
+  clearOperatorDraft: () => localStorage.removeItem(KEYS.OPDRAFT),
 
   clearAll: () => Object.values(KEYS).forEach(k => localStorage.removeItem(k)),
 };

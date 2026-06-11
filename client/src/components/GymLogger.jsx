@@ -159,9 +159,9 @@ function SetRow({ set, index, kind, onChange, onComplete, isActive }) {
   );
 }
 
-export default function GymLogger({ workout, profile, onSave }) {
+export default function GymLogger({ workout, profile, onSave, adjust = true, completeLabel = 'Complete Session ✓' }) {
   const wellness = storage.getTodayWellness();
-  const mult = getWellnessMult(wellness);
+  const mult = adjust ? getWellnessMult(wellness) : 1;
   const pctDiff = Math.round((mult - 1) * 100);
 
   const [exercises, setExercises] = useState(
@@ -217,7 +217,7 @@ export default function GymLogger({ workout, profile, onSave }) {
       {showTimer && <RestTimer onDismiss={() => setShowTimer(false)} />}
       {infoName && <ExerciseInfo name={infoName} onClose={() => setInfoName(null)} />}
 
-      {wellness && pctDiff !== 0 && (
+      {adjust && wellness && pctDiff !== 0 && (
         <div style={{
           padding: '0.6rem 1rem', borderRadius: 'var(--radius)',
           background: pctDiff < 0 ? 'var(--warn)15' : 'var(--success)15',
@@ -362,7 +362,7 @@ export default function GymLogger({ workout, profile, onSave }) {
 
       <button className={`btn ${allDone ? 'btn-primary' : 'btn-secondary'}`}
         onClick={() => onSave(exercises.map(ex => ({ name: ex.name, kind: ex.kind, sets: ex.sets })))}>
-        {allDone ? 'Complete Session ✓' : 'Save Progress'}
+        {allDone ? completeLabel : 'Save Progress'}
       </button>
     </div>
   );

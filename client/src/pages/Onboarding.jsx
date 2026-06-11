@@ -29,13 +29,21 @@ const DEFAULT_SCHEDULE = {
   sun: { am: false, pm: false },
 };
 
+// Four core disciplines (Strength, Run, Swim, Ruck). The two "program" modes
+// blend them; the four "single" modes emphasise one. The Operator *test* has 5
+// scored events — that's an assessment, not a 5th discipline.
 const FOCUSES = [
-  { value: 'balanced', label: 'Balanced', desc: 'All 4 disciplines equally' },
-  { value: 'operator', label: 'Operator Prep', desc: 'Build toward the 5-event operator test' },
-  { value: 'run', label: 'Run', desc: 'Improve 2.4km / run endurance' },
-  { value: 'gym', label: 'Strength', desc: 'Build power and muscle' },
-  { value: 'ruck', label: 'Ruck', desc: 'Loaded march capacity' },
-  { value: 'swim', label: 'Swim', desc: 'Water endurance' },
+  { value: 'balanced', label: 'Balanced', desc: 'Strength, Run, Swim & Ruck — equal emphasis', group: 'program' },
+  { value: 'operator', label: 'Operator Prep', desc: 'Strength + conditioning for the 5-event operator test', group: 'program' },
+  { value: 'gym',  label: 'Strength', desc: 'Build maximal power & muscle', group: 'single' },
+  { value: 'run',  label: 'Run',  desc: 'Improve 2.4km / run endurance', group: 'single' },
+  { value: 'swim', label: 'Swim', desc: 'Water endurance', group: 'single' },
+  { value: 'ruck', label: 'Ruck', desc: 'Loaded march capacity', group: 'single' },
+];
+
+const FOCUS_GROUPS = [
+  ['program', 'Programs', 'Blend the four disciplines'],
+  ['single', 'Single-discipline focus', 'Emphasise one pillar'],
 ];
 
 function StepDots({ current }) {
@@ -233,23 +241,35 @@ export default function Onboarding() {
 
           <div>
             <div className="label">Training Focus</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {FOCUSES.map(f => (
-                <button key={f.value} onClick={() => set('focus', f.value)}
-                  style={{
-                    background: form.focus === f.value ? 'var(--accent)20' : 'var(--bg-card)',
-                    border: `1px solid ${form.focus === f.value ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: 'var(--radius)', padding: '0.75rem 1rem',
-                    textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{f.label}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{f.desc}</div>
-                  </div>
-                  {form.focus === f.value && <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>✓</span>}
-                </button>
-              ))}
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: -2, marginBottom: 10, lineHeight: 1.5 }}>
+              TacFit trains <strong>4 disciplines</strong> — Strength, Run, Swim &amp; Ruck. Pick a program that
+              blends them, or focus a single one.
             </div>
+            {FOCUS_GROUPS.map(([g, title, hint]) => (
+              <div key={g} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '0 0 6px 2px' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)' }}>{title}</span>
+                  <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>· {hint}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {FOCUSES.filter(f => f.group === g).map(f => (
+                    <button key={f.value} onClick={() => set('focus', f.value)}
+                      style={{
+                        background: form.focus === f.value ? 'var(--accent)20' : 'var(--bg-card)',
+                        border: `1px solid ${form.focus === f.value ? 'var(--accent)' : 'var(--border)'}`,
+                        borderRadius: 'var(--radius)', padding: '0.75rem 1rem',
+                        textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{f.label}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{f.desc}</div>
+                      </div>
+                      {form.focus === f.value && <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           <button className="btn btn-primary" onClick={next} disabled={!form.name.trim()}>Continue</button>
