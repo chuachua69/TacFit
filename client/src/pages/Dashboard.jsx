@@ -7,6 +7,7 @@ import BottomNav from '../components/BottomNav';
 import PixelCharacter from '../components/PixelCharacter';
 import BulletFX from '../components/BulletFX';
 import PromotionModal from '../components/PromotionModal';
+import MissedModal from '../components/MissedModal';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
 
@@ -54,6 +55,8 @@ export default function Dashboard() {
   const [showWellness, setShowWellness] = useState(false);
   const [char, setChar] = useState(charStore.get());
   const [promo, setPromo] = useState(null);
+  const [reschedule, setReschedule] = useState(false);
+  const [, setRefresh] = useState(0);
   const wellness = storage.getTodayWellness();
   const logs = storage.getLogs();
   const rank = rankFor(char.level);
@@ -79,6 +82,15 @@ export default function Dashboard() {
   const today = new Date().toISOString().split('T')[0];
   const message = pickMessage(todaySessions, logs);
   const levelPct = charStore.levelProgress(char) * 100;
+
+  // Overdue: past sessions with no log at all
+  const allSessions = plan?.weeks.flatMap(w => w.sessions) || [];
+  const overdue = allSessions
+    .filter(s => s.date < today && !logs.find(l => l.sessionId === s.id))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Recovery recommendation from today's wellness
+  const lowRecovery = wellness && (wellness.fatigue >= 4 || wellness.soreness >= 4 || (wellness.sleep != null && wellness.sleep < 6));
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: '1.25rem', paddingBottom: '5rem' }}>
@@ -162,6 +174,66 @@ export default function Dashboard() {
           onClick={() => navigate('/bunk')}
         />
       </div>
+
+      {/* Recovery recommendation */}
+      {lowRecovery && (
+        <div className="card" style={{
+          marginBottom: '1rem', border: '1px solid var(--warn)40', background: 'var(--warn)12',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ fontSize: '1.4rem' }}>🛌</span>
+          <div style={{ fontSize: '0.82rem', color: 'var(--warn)', fontWeight: 600 }}>
+            Recovery flagged today — training loads are auto-reduced. Consider an easy effort or a rest day.
+          </div>
+        </div>
+      )}
+
+      {/* Overdue sessions */}
+      {overdue.length > 0 && (
+        <div style={{ marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div className="label" style={{ marginBottom: 0, color: 'var(--danger)' }}>
+              Overdue · {overdue.length}
+            </div>
+            <button className="btn btn-ghost" style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.75rem', color: 'var(--accent)' }}
+              onClick={() => setReschedule(true)}>
+              Reschedule plan →
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {overdue.slice(0, 3).map(s => (
+              <button key={s.id} className="card"
+                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: '1px solid var(--danger)30', padding: '0.6rem 0.85rem' }}
+                onClick={() => navigate(`/session/${s.id}`)}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.1rem' }}>{DISC_EMOJI[s.discipline]}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{s.workout?.label || s.workout?.focus || 'Session'}</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{s.date} · Week {s.week}</div>
+                    </div>
+                  </div>
+                  <span style={{ color: 'var(--danger)', fontSize: '1.1rem' }}>→</span>
+                </div>
+              </button>
+            ))}
+            {overdue.length > 3 && (
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                +{overdue.length - 3} more — use Reschedule to clear them
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {reschedule && overdue.length > 0 && (
+        <MissedModal
+          session={overdue[0]}
+          plan={plan}
+          onClose={() => setReschedule(false)}
+          onDone={() => { setReschedule(false); setRefresh(r => r + 1); }}
+        />
+      )}
 
       {/* Week progress bar */}
       {progress && (
