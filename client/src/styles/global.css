@@ -202,8 +202,21 @@ a {
   transform-box: view-box;
 }
 
+/* limb swing — arms & legs articulate as it paces (contralateral gait) */
+@keyframes limbFwd  { 0%, 100% { transform: rotate(9deg); }  50% { transform: rotate(-9deg); } }
+@keyframes limbBack { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+@keyframes legFwd   { 0%, 100% { transform: rotate(6deg); }  50% { transform: rotate(-6deg); } }
+@keyframes legBack  { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+
+.limb-armL, .limb-armR, .limb-legL, .limb-legR { transform-box: view-box; }
+.limb-armL { transform-origin: 28px 59px; animation: limbFwd  1.15s ease-in-out infinite; }
+.limb-armR { transform-origin: 72px 59px; animation: limbBack 1.15s ease-in-out infinite; }
+.limb-legL { transform-origin: 38px 90px; animation: legBack  1.15s ease-in-out infinite; }
+.limb-legR { transform-origin: 62px 90px; animation: legFwd   1.15s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .tac-bob, .tac-walk, .tac-fidget { animation: none; }
+  .tac-bob, .tac-walk, .tac-fidget,
+  .limb-armL, .limb-armR, .limb-legL, .limb-legR { animation: none; }
 }
 
 /* ─────────────────────────────────────────────

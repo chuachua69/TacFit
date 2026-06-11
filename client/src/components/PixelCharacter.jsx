@@ -110,45 +110,57 @@ export default function PixelCharacter({
           1. BOOTS  (drawn first, back layer)
           ══════════════════════════════════════ */}
       {footwear === 'boots' && <>
-        {/* ── Left boot ── compact, sits under left leg, clear center gap */}
-        <path d="M20,104 L46,104 L47,113 L19,113 Z" fill={C.bo} />
-        <path d="M20,104 L27,104 L27,113 L19,113 Z" fill={C.boH} opacity="0.28" />
-        <path d="M19,110 L19,113 L47,113 L46,110 Z" fill={C.boS} />
-        <path d="M17,112 L49,112 L50,116 L16,116 Z" fill={C.boSl} />
-        <line x1="20" y1="104" x2="46" y2="104" stroke={C.boR} strokeWidth="0.9" opacity="0.8" />
-        <line x1="23" y1="105.5" x2="43" y2="105.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.6" />
-        <line x1="22" y1="108"   x2="44" y2="108"   stroke="#4a4030" strokeWidth="0.6" opacity="0.55" />
-        <line x1="21" y1="110.5" x2="45" y2="110.5" stroke="#4a4030" strokeWidth="0.5" opacity="0.4" />
+        {/* ── Left boot ── (swings with left leg) */}
+        <g className="limb-legL">
+          <path d="M20,104 L46,104 L47,113 L19,113 Z" fill={C.bo} />
+          <path d="M20,104 L27,104 L27,113 L19,113 Z" fill={C.boH} opacity="0.28" />
+          <path d="M19,110 L19,113 L47,113 L46,110 Z" fill={C.boS} />
+          <path d="M17,112 L49,112 L50,116 L16,116 Z" fill={C.boSl} />
+          <line x1="20" y1="104" x2="46" y2="104" stroke={C.boR} strokeWidth="0.9" opacity="0.8" />
+          <line x1="23" y1="105.5" x2="43" y2="105.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.6" />
+          <line x1="22" y1="108"   x2="44" y2="108"   stroke="#4a4030" strokeWidth="0.6" opacity="0.55" />
+          <line x1="21" y1="110.5" x2="45" y2="110.5" stroke="#4a4030" strokeWidth="0.5" opacity="0.4" />
+        </g>
 
-        {/* ── Right boot ── */}
-        <path d="M54,104 L80,104 L81,113 L53,113 Z" fill={C.bo} />
-        <path d="M73,104 L80,104 L81,113 L74,113 Z" fill={C.boH} opacity="0.28" />
-        <path d="M53,110 L53,113 L81,113 L80,110 Z" fill={C.boS} />
-        <path d="M51,112 L83,112 L84,116 L50,116 Z" fill={C.boSl} />
-        <line x1="54" y1="104" x2="80" y2="104" stroke={C.boR} strokeWidth="0.9" opacity="0.8" />
-        <line x1="57" y1="105.5" x2="77" y2="105.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.6" />
-        <line x1="56" y1="108"   x2="78" y2="108"   stroke="#4a4030" strokeWidth="0.6" opacity="0.55" />
-        <line x1="55" y1="110.5" x2="79" y2="110.5" stroke="#4a4030" strokeWidth="0.5" opacity="0.4" />
+        {/* ── Right boot ── (swings with right leg) */}
+        <g className="limb-legR">
+          <path d="M54,104 L80,104 L81,113 L53,113 Z" fill={C.bo} />
+          <path d="M73,104 L80,104 L81,113 L74,113 Z" fill={C.boH} opacity="0.28" />
+          <path d="M53,110 L53,113 L81,113 L80,110 Z" fill={C.boS} />
+          <path d="M51,112 L83,112 L84,116 L50,116 Z" fill={C.boSl} />
+          <line x1="54" y1="104" x2="80" y2="104" stroke={C.boR} strokeWidth="0.9" opacity="0.8" />
+          <line x1="57" y1="105.5" x2="77" y2="105.5" stroke="#4a4030" strokeWidth="0.6" opacity="0.6" />
+          <line x1="56" y1="108"   x2="78" y2="108"   stroke="#4a4030" strokeWidth="0.6" opacity="0.55" />
+          <line x1="55" y1="110.5" x2="79" y2="110.5" stroke="#4a4030" strokeWidth="0.5" opacity="0.4" />
+        </g>
       </>}
 
       {footwear === 'shoes' && <>
-        <path d="M20,105 L46,105 L47,113 L19,113 Z" fill="#3a2e24" />
-        <path d="M17,112 L49,112 L50,116 L16,116 Z" fill="#1e1812" />
-        <path d="M54,105 L80,105 L81,113 L53,113 Z" fill="#3a2e24" />
-        <path d="M51,112 L83,112 L84,116 L50,116 Z" fill="#1e1812" />
+        <g className="limb-legL">
+          <path d="M20,105 L46,105 L47,113 L19,113 Z" fill="#3a2e24" />
+          <path d="M17,112 L49,112 L50,116 L16,116 Z" fill="#1e1812" />
+        </g>
+        <g className="limb-legR">
+          <path d="M54,105 L80,105 L81,113 L53,113 Z" fill="#3a2e24" />
+          <path d="M51,112 L83,112 L84,116 L50,116 Z" fill="#1e1812" />
+        </g>
       </>}
 
       {/* ══════════════════════════════════════
           2. LEGS — short chunky chibi
           ══════════════════════════════════════ */}
       {/* Left leg */}
-      <path d={`M${ph.tL},88 L${ph.tL+20},88 L${ph.tL+18},103 L${ph.tL-2},103 Z`} fill={pc.f} />
-      <path d={`M${ph.tL},88 L${ph.tL+8},88 L${ph.tL+6},103 L${ph.tL-2},103 Z`} fill={pc.l} opacity="0.3" />
-      <path d={`M${ph.tL+16},88 L${ph.tL+20},88 L${ph.tL+18},103 L${ph.tL+14},103 Z`} fill={pc.s} opacity="0.5" />
+      <g className="limb-legL">
+        <path d={`M${ph.tL},88 L${ph.tL+20},88 L${ph.tL+18},103 L${ph.tL-2},103 Z`} fill={pc.f} />
+        <path d={`M${ph.tL},88 L${ph.tL+8},88 L${ph.tL+6},103 L${ph.tL-2},103 Z`} fill={pc.l} opacity="0.3" />
+        <path d={`M${ph.tL+16},88 L${ph.tL+20},88 L${ph.tL+18},103 L${ph.tL+14},103 Z`} fill={pc.s} opacity="0.5" />
+      </g>
       {/* Right leg */}
-      <path d={`M${ph.tR-20},88 L${ph.tR},88 L${ph.tR+2},103 L${ph.tR-18},103 Z`} fill={pc.f} />
-      <path d={`M${ph.tR-8},88 L${ph.tR},88 L${ph.tR+2},103 L${ph.tR-6},103 Z`} fill={pc.s} opacity="0.5" />
-      <path d={`M${ph.tR-20},88 L${ph.tR-12},88 L${ph.tR-14},103 L${ph.tR-22},103 Z`} fill={pc.l} opacity="0.3" />
+      <g className="limb-legR">
+        <path d={`M${ph.tR-20},88 L${ph.tR},88 L${ph.tR+2},103 L${ph.tR-18},103 Z`} fill={pc.f} />
+        <path d={`M${ph.tR-8},88 L${ph.tR},88 L${ph.tR+2},103 L${ph.tR-6},103 Z`} fill={pc.s} opacity="0.5" />
+        <path d={`M${ph.tR-20},88 L${ph.tR-12},88 L${ph.tR-14},103 L${ph.tR-22},103 Z`} fill={pc.l} opacity="0.3" />
+      </g>
       {/* Crotch gusset */}
       <path d={`M${ph.tL+18},88 L${ph.tR-18},88 L${ph.tR-20},96 L${ph.tL+20},96 Z`} fill={pc.f} />
       <path d="M48,88 L52,88 L52,96 L48,96 Z" fill={pc.s} opacity="0.45" />
@@ -156,27 +168,31 @@ export default function PixelCharacter({
       {/* ══════════════════════════════════════
           3. ARMS — chunky sleeves + skin mitten hands
           ══════════════════════════════════════ */}
-      {/* ── Left arm ── */}
-      {/* Sleeve */}
-      <path d={`M${ph.aL},61 L${ph.tL+1},60 L${ph.tL},75 L${ph.aL-1},76 Z`} fill={C.un} />
-      {/* Sleeve shadow facet (inner) */}
-      <path d={`M${ph.tL-4},60 L${ph.tL+1},60 L${ph.tL},75 L${ph.tL-5},75 Z`} fill={C.unS} opacity="0.42" />
-      {/* Sleeve cuff line */}
-      <line x1={ph.aL-1} y1="74" x2={ph.tL} y2="74" stroke={C.unS} strokeWidth="0.8" opacity="0.6" />
-      {/* Hand — mitten */}
-      <ellipse cx={ph.aL+2} cy="79" rx="5" ry="5.5" fill={C.sk} />
-      {/* Hand shadow facet */}
-      <path d={`M${ph.aL+2},74 A5,5.5 0 0 1 ${ph.aL+7},79 A5,5.5 0 0 1 ${ph.aL+2},84.5 Z`} fill={C.skSh} opacity="0.3" />
-      {/* Thumb bump */}
-      <circle cx={ph.aL+6} cy="77" r="1.8" fill={C.sk} />
+      {/* ── Left arm ── (swings from the shoulder) */}
+      <g className="limb-armL">
+        {/* Sleeve */}
+        <path d={`M${ph.aL},61 L${ph.tL+1},60 L${ph.tL},75 L${ph.aL-1},76 Z`} fill={C.un} />
+        {/* Sleeve shadow facet (inner) */}
+        <path d={`M${ph.tL-4},60 L${ph.tL+1},60 L${ph.tL},75 L${ph.tL-5},75 Z`} fill={C.unS} opacity="0.42" />
+        {/* Sleeve cuff line */}
+        <line x1={ph.aL-1} y1="74" x2={ph.tL} y2="74" stroke={C.unS} strokeWidth="0.8" opacity="0.6" />
+        {/* Hand — mitten */}
+        <ellipse cx={ph.aL+2} cy="79" rx="5" ry="5.5" fill={C.sk} />
+        {/* Hand shadow facet */}
+        <path d={`M${ph.aL+2},74 A5,5.5 0 0 1 ${ph.aL+7},79 A5,5.5 0 0 1 ${ph.aL+2},84.5 Z`} fill={C.skSh} opacity="0.3" />
+        {/* Thumb bump */}
+        <circle cx={ph.aL+6} cy="77" r="1.8" fill={C.sk} />
+      </g>
 
-      {/* ── Right arm ── */}
-      <path d={`M${ph.tR-1},60 L${ph.aR},61 L${ph.aR+1},76 L${ph.tR},75 Z`} fill={C.un} />
-      <path d={`M${ph.tR-1},60 L${ph.tR+4},60 L${ph.tR+5},75 L${ph.tR},75 Z`} fill={C.unS} opacity="0.42" />
-      <line x1={ph.tR} y1="74" x2={ph.aR+1} y2="74" stroke={C.unS} strokeWidth="0.8" opacity="0.6" />
-      <ellipse cx={ph.aR-2} cy="79" rx="5" ry="5.5" fill={C.sk} />
-      <path d={`M${ph.aR-2},74 A5,5.5 0 0 0 ${ph.aR-7},79 A5,5.5 0 0 0 ${ph.aR-2},84.5 Z`} fill={C.skSh} opacity="0.3" />
-      <circle cx={ph.aR-6} cy="77" r="1.8" fill={C.sk} />
+      {/* ── Right arm ── (swings from the shoulder) */}
+      <g className="limb-armR">
+        <path d={`M${ph.tR-1},60 L${ph.aR},61 L${ph.aR+1},76 L${ph.tR},75 Z`} fill={C.un} />
+        <path d={`M${ph.tR-1},60 L${ph.tR+4},60 L${ph.tR+5},75 L${ph.tR},75 Z`} fill={C.unS} opacity="0.42" />
+        <line x1={ph.tR} y1="74" x2={ph.aR+1} y2="74" stroke={C.unS} strokeWidth="0.8" opacity="0.6" />
+        <ellipse cx={ph.aR-2} cy="79" rx="5" ry="5.5" fill={C.sk} />
+        <path d={`M${ph.aR-2},74 A5,5.5 0 0 0 ${ph.aR-7},79 A5,5.5 0 0 0 ${ph.aR-2},84.5 Z`} fill={C.skSh} opacity="0.3" />
+        <circle cx={ph.aR-6} cy="77" r="1.8" fill={C.sk} />
+      </g>
 
       {/* ══════════════════════════════════════
           4. TORSO — V-taper, low-poly facets
