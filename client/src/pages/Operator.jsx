@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import { EVENTS, scoreAssessment } from '../lib/operatorScore';
 import EventTimer from '../components/EventTimer';
+import BottomNav from '../components/BottomNav';
 
 export default function Operator() {
-  const navigate = useNavigate();
   const profile = storage.getProfile();
   const unit = profile?.unit || 'kg';
   const history = storage.getOperatorTests();
@@ -45,15 +44,11 @@ export default function Operator() {
   };
 
   return (
-    <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem', paddingBottom: '2rem' }}>
+    <div className="screen" style={{ gap: '1.25rem', paddingTop: '1.5rem', paddingBottom: '5rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button className="btn btn-ghost" style={{ width: 'auto', padding: '0.4rem 0.75rem' }}
-          onClick={() => navigate(-1)}>← Back</button>
-        <div>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Operator Assessment</div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>5-event fitness test protocol</div>
-        </div>
+      <div>
+        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>OPERATOR</div>
+        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>5-event fitness test protocol</div>
       </div>
 
       {timerEvent && (
@@ -205,6 +200,7 @@ export default function Operator() {
           </div>
         </div>
       )}
+      <BottomNav active="operator" />
     </div>
   );
 }

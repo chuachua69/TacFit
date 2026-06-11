@@ -166,17 +166,44 @@ a {
 /* ─────────────────────────────────────────────
    Character idle bob
    ───────────────────────────────────────────── */
+/* step bounce */
 @keyframes tacBob {
-  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
-  50%      { transform: translateY(-2.4px) rotate(0.4deg); }
+  0%, 100% { transform: translateY(0); }
+  25%      { transform: translateY(-2.2px); }
+  50%      { transform: translateY(0); }
+  75%      { transform: translateY(-2.2px); }
 }
-.tac-bob {
-  animation: tacBob 3.4s ease-in-out infinite;
-  transform-origin: 50px 110px;
-  transform-box: fill-box;
+.tac-bob { animation: tacBob 1.15s ease-in-out infinite; }
+
+/* pace back and forth, turning to face the direction of travel */
+@keyframes tacWalk {
+  0%   { transform: translateX(-7px) scaleX(1); }
+  46%  { transform: translateX(7px)  scaleX(1); }
+  50%  { transform: translateX(7px)  scaleX(-1); }
+  96%  { transform: translateX(-7px) scaleX(-1); }
+  100% { transform: translateX(-7px) scaleX(1); }
 }
+.tac-walk {
+  animation: tacWalk 11s ease-in-out infinite;
+  transform-origin: 50px 64px;
+  transform-box: view-box;
+}
+
+/* occasional fidget — small tilt / shrug */
+@keyframes tacFidget {
+  0%, 76%, 100% { transform: rotate(0deg); }
+  83% { transform: rotate(2.5deg); }
+  90% { transform: rotate(-2deg); }
+  95% { transform: rotate(1deg); }
+}
+.tac-fidget {
+  animation: tacFidget 6.5s ease-in-out infinite;
+  transform-origin: 50px 96px;
+  transform-box: view-box;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tac-bob { animation: none; }
+  .tac-bob, .tac-walk, .tac-fidget { animation: none; }
 }
 
 /* ─────────────────────────────────────────────

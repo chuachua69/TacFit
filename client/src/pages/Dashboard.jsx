@@ -305,21 +305,6 @@ export default function Dashboard() {
         </button>
       )}
 
-      {/* Operator assessment entry */}
-      <button className="card" onClick={() => navigate('/operator')}
-        style={{
-          width: '100%', textAlign: 'left', cursor: 'pointer', marginTop: '0.5rem',
-          display: 'flex', alignItems: 'center', gap: 12,
-          border: '1px solid var(--accent)40',
-        }}>
-        <span style={{ fontSize: '1.6rem' }}>🎯</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700 }}>Operator Assessment</div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>5-event fitness test · score &amp; tier</div>
-        </div>
-        <span style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>→</span>
-      </button>
-
       <BottomNav active="dashboard" />
     </div>
   );

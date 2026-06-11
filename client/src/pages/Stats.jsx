@@ -1,7 +1,7 @@
-import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import BottomNav from '../components/BottomNav';
 import RadarChart from '../components/RadarChart';
+import Collapsible from '../components/Collapsible';
 import { computeProfile } from '../lib/fitnessProfile';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
@@ -77,9 +77,7 @@ export default function Stats() {
     return { name, best, series, isPR };
   }).sort((a, b) => b.best.e1rm - a.best.e1rm);
 
-  // Latest operator assessment
   const opTests = storage.getOperatorTests();
-  const lastOp = opTests[opTests.length - 1];
 
   // Fitness profile (radar)
   const fitness = computeProfile({ profile, logs, plan, operatorTests: opTests });
@@ -118,9 +116,8 @@ export default function Stats() {
       </div>
 
       {/* Fitness profile radar */}
-      <div>
-        <div className="label">Fitness Profile</div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <Collapsible title="Fitness Profile" subtitle="Strength radar & overall rating" defaultOpen>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
           {rated >= 3 ? (
             <>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -138,11 +135,10 @@ export default function Stats() {
             </div>
           )}
         </div>
-      </div>
+      </Collapsible>
 
       {/* Discipline breakdown */}
-      <div>
-        <div className="label">By Discipline</div>
+      <Collapsible title="By Discipline" subtitle="Completion per discipline">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {DISCIPLINES.filter(d => discStats[d].total > 0).map(d => {
             const pct = discStats[d].total > 0 ? discStats[d].done / discStats[d].total : 0;
@@ -164,30 +160,12 @@ export default function Stats() {
             );
           })}
         </div>
-      </div>
-
-      {/* Latest Operator score */}
-      {lastOp && (
-        <button className="card" onClick={() => navigate('/operator')}
-          style={{ width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--accent)40' }}>
-          <span style={{ fontSize: '1.5rem' }}>🎯</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700 }}>Operator Assessment</div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-              {lastOp.totalBonus.toFixed(1)} pts · {lastOp.tierLabel}
-            </div>
-          </div>
-          <span style={{ fontSize: '1.1rem', color: 'var(--accent)' }}>→</span>
-        </button>
-      )}
+      </Collapsible>
 
       {/* Strength — estimated 1RM with progression */}
       {strength.length > 0 && (
-        <div>
-          <div className="label">
-            Strength · est. 1RM {bw > 0 && <span style={{ textTransform: 'none', fontWeight: 400 }}>· BW {bw} {unit}</span>}
-          </div>
-          <div className="card" style={{ padding: '0.25rem 1rem' }}>
+        <Collapsible title="Strength · est. 1RM" subtitle={bw > 0 ? `Bodyweight ${bw} ${unit}` : 'Per-lift bests & progression'}>
+          <div style={{ padding: '0 0.25rem' }}>
             {strength.map((s, i) => (
               <div key={s.name} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
@@ -218,7 +196,7 @@ export default function Stats() {
           <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 6 }}>
             Estimated 1RM (Epley) from your logged working sets. 🏆 = set in your latest session.
           </div>
-        </div>
+        </Collapsible>
       )}
 
       {/* After week 6 note */}
@@ -235,8 +213,7 @@ export default function Stats() {
       </div>
 
       {/* Weekly summary */}
-      <div>
-        <div className="label">By Week</div>
+      <Collapsible title="By Week" subtitle="6-week phase progress">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {plan.weeks.map(week => {
             const done = week.sessions.filter(s => logs.find(l => l.sessionId === s.id && l.status === 'done')).length;
@@ -263,7 +240,7 @@ export default function Stats() {
             );
           })}
         </div>
-      </div>
+      </Collapsible>
 
       <BottomNav active="stats" />
     </div>

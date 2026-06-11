@@ -101,8 +101,10 @@ export default function PixelCharacter({
       onClick={onClick}
     >
 
-      {/* Bobbing group — gentle idle motion (UI overlay stays static below) */}
+      {/* Idle motion: pace (walk) → step bob → fidget. UI overlay stays static below. */}
+      <g className="tac-walk">
       <g className="tac-bob" style={{ animationDelay: `${(physique?.length || 0) * 0.13}s` }}>
+      <g className="tac-fidget">
 
       {/* ══════════════════════════════════════
           1. BOOTS  (drawn first, back layer)
@@ -411,7 +413,7 @@ export default function PixelCharacter({
         </g>
       )}
 
-      </g>{/* end bobbing group */}
+      </g></g></g>{/* end idle motion groups */}
 
       {/* ══════════════════════════════════════
           13. UI OVERLAY — level bar
