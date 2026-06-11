@@ -5,6 +5,57 @@ import { storage } from '../store/storage';
 
 const SET_TYPES = ['warmup', 'normal', 'dropset'];
 
+const SET_TYPE_STYLE = {
+  warmup:  { color: 'var(--warn)', bg: 'var(--warn)20',     label: 'W' },
+  normal:  { color: 'var(--text)', bg: 'var(--bg-elevated)', label: 'N' },
+  dropset: { color: 'var(--gym)',  bg: 'var(--gym)20',      label: 'D' },
+};
+
+const round2_5 = v => Math.round(v / 2.5) * 2.5;
+
+// ── Exercise classification ─────────────────────────────────────────────
+// weighted   = load × reps (barbell/DB lifts) → plates apply
+// bodyweight = reps, optional added load (pull-ups, push-ups)
+// timed      = held/duration effort in seconds (planks, carries)
+function kindOf(ex) {
+  if (ex.kind) return ex.kind;
+  if (ex.duration != null) return 'timed';
+  if (ex.weight == null) return 'bodyweight';
+  return 'weighted';
+}
+
+function parseSeconds(d) {
+  if (typeof d === 'number') return d;
+  if (!d) return 45;
+  const mmss = String(d).match(/(\d+):(\d+)/);
+  if (mmss) return +mmss[1] * 60 + +mmss[2];
+  const s = String(d).match(/(\d+)\s*s/i); if (s) return +s[1];
+  const m = String(d).match(/(\d+)\s*m/i); if (m) return +m[1] * 60;
+  const n = parseInt(d, 10); return isNaN(n) ? 45 : n;
+}
+
+// ── Swap catalogue (by movement pattern) ────────────────────────────────
+const SWAP_GROUPS = [
+  { pattern: 'squat',    items: [['Back Squat', 'weighted'], ['Front Squat', 'weighted'], ['Goblet Squat', 'weighted'], ['Bulgarian Split Squat', 'weighted'], ['Leg Press', 'weighted']] },
+  { pattern: 'deadlift', items: [['Deadlift', 'weighted'], ['Romanian Deadlift', 'weighted'], ['Trap-Bar Deadlift', 'weighted'], ['Hip Thrust', 'weighted'], ['Good Morning', 'weighted']] },
+  { pattern: 'bench',    items: [['Bench Press', 'weighted'], ['Incline Bench Press', 'weighted'], ['DB Bench Press', 'weighted'], ['Push-ups', 'bodyweight'], ['Dips', 'bodyweight']] },
+  { pattern: 'press',    items: [['Overhead Press', 'weighted'], ['Push Press', 'weighted'], ['DB Shoulder Press', 'weighted'], ['Arnold Press', 'weighted'], ['Pike Push-ups', 'bodyweight']] },
+  { pattern: 'row',      items: [['Bent-over Row', 'weighted'], ['Pendlay Row', 'weighted'], ['DB Row', 'weighted'], ['Seated Cable Row', 'weighted'], ['Inverted Row', 'bodyweight']] },
+  { pattern: 'pull',     items: [['Pull-ups', 'bodyweight'], ['Chin-ups', 'bodyweight'], ['Weighted Pull-ups', 'bodyweight'], ['Lat Pulldown', 'weighted']] },
+  { pattern: 'plank',    items: [['Plank', 'timed'], ['Side Plank', 'timed'], ['Hollow Hold', 'timed'], ['Hanging Leg Raise', 'bodyweight'], ['Dead Bug', 'timed']] },
+  { pattern: 'lunge',    items: [['Walking Lunges', 'weighted'], ['Alternating Lunges', 'weighted'], ['Reverse Lunges', 'weighted'], ['Step-ups', 'weighted']] },
+  { pattern: 'carry',    items: [['Farmer Carry', 'timed'], ['Suitcase Carry', 'timed'], ['Sandbag Carry', 'timed']] },
+];
+
+function altsFor(name) {
+  const lc = name.toLowerCase();
+  let g = SWAP_GROUPS.find(grp => grp.items.some(it => it[0].toLowerCase() === lc));
+  if (!g) g = SWAP_GROUPS.find(grp => lc.includes(grp.pattern));
+  if (!g) g = SWAP_GROUPS.find(grp => grp.items.some(it => lc.includes(it[0].toLowerCase().split(' ')[0])));
+  const list = g ? g.items : [];
+  return list.filter(it => it[0].toLowerCase() !== lc).map(([n, k]) => ({ name: n, kind: k }));
+}
+
 function getWellnessMult(wellness) {
   if (!wellness) return 1;
   let m = 1.0;
@@ -14,81 +65,100 @@ function getWellnessMult(wellness) {
   if (wellness.fatigue <= 2 && wellness.soreness <= 2 && wellness.sleep >= 7) m += 0.05;
   return Math.max(0.75, Math.min(1.1, m));
 }
-const SET_TYPE_STYLE = {
-  warmup:  { color: 'var(--warn)',    bg: 'var(--warn)20',    label: 'W' },
-  normal:  { color: 'var(--text)',    bg: 'var(--bg-elevated)', label: 'N' },
-  dropset: { color: 'var(--gym)',     bg: 'var(--gym)20',     label: 'D' },
-};
 
-function defaultSets(exercise, mult = 1) {
-  const base = exercise.weight || 0;
-  const adj = base > 0 ? Math.round((base * mult) / 2.5) * 2.5 : 0;
-  const sets = [];
-  sets.push({ type: 'warmup', reps: 10, weight: adj ? Math.round(adj * 0.6 / 2.5) * 2.5 : 0, rpe: null, done: false });
-  for (let i = 0; i < (exercise.sets || 3); i++) {
-    sets.push({ type: 'normal', reps: exercise.reps || 8, weight: adj, rpe: null, done: false });
+function defaultSets(ex, mult = 1) {
+  const kind = kindOf(ex);
+  const count = ex.sets || 3;
+  const out = [];
+  if (kind === 'weighted') {
+    const base = ex.weight || 0;
+    const adj = base > 0 ? round2_5(base * mult) : 0;
+    out.push({ type: 'warmup', reps: 10, weight: adj ? round2_5(adj * 0.6) : 0, rpe: null, done: false });
+    for (let i = 0; i < count; i++) out.push({ type: 'normal', reps: ex.reps || 8, weight: adj, rpe: null, done: false });
+  } else if (kind === 'bodyweight') {
+    for (let i = 0; i < count; i++) out.push({ type: 'normal', reps: ex.reps || 8, addedWeight: 0, rpe: null, done: false });
+  } else {
+    const secs = parseSeconds(ex.duration);
+    for (let i = 0; i < count; i++) out.push({ type: 'normal', seconds: secs, rpe: null, done: false });
   }
-  return sets;
+  return out;
 }
 
-function SetRow({ set, index, onChange, onComplete, unit, isActive }) {
+const GRID = {
+  weighted:   '26px 24px 1fr 1fr 38px 34px',
+  bodyweight: '26px 24px 1fr 1fr 38px 34px',
+  timed:      '26px 24px 1fr 38px 34px',
+};
+
+function NumField({ value, onChange, suffix, inputMode = 'numeric', step }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      <input type="number" inputMode={inputMode} step={step} value={value ?? ''}
+        onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+        style={{ padding: '0.35rem 0.4rem', fontSize: '0.9rem', textAlign: 'center', minWidth: 0 }} />
+      <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>{suffix}</span>
+    </div>
+  );
+}
+
+function SetRow({ set, index, kind, onChange, onComplete, unit, isActive }) {
   const style = SET_TYPE_STYLE[set.type];
   return (
     <div style={{
-      display: 'grid',
-      gridTemplateColumns: '28px 32px 1fr 1fr 44px 36px',
-      gap: 6, alignItems: 'center',
-      padding: '0.5rem 0',
-      opacity: set.done ? 0.45 : 1,
+      display: 'grid', gridTemplateColumns: GRID[kind], gap: 6, alignItems: 'center',
+      padding: '0.5rem 0', opacity: set.done ? 0.45 : 1,
       borderBottom: '1px solid var(--border)',
       borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
       paddingLeft: isActive ? '0.4rem' : 0,
       background: isActive ? 'var(--accent)08' : 'transparent',
-      borderRadius: isActive ? 4 : 0,
-      transition: 'border-left-color 0.2s',
+      borderRadius: isActive ? 4 : 0, transition: 'border-left-color 0.2s',
     }}>
       <button onClick={() => {
         const idx = SET_TYPES.indexOf(set.type);
         onChange({ ...set, type: SET_TYPES[(idx + 1) % SET_TYPES.length] });
       }} style={{
-        width: 28, height: 28, borderRadius: 6,
-        background: style.bg, color: style.color,
+        width: 26, height: 26, borderRadius: 6, background: style.bg, color: style.color,
         fontWeight: 800, fontSize: '0.7rem', border: 'none', flexShrink: 0,
       }}>
         {style.label}
       </button>
 
-      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-        #{index + 1}
-      </span>
+      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>#{index + 1}</span>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <input type="number" inputMode="decimal" value={set.weight ?? ''}
-          onChange={e => onChange({ ...set, weight: Number(e.target.value) })}
-          style={{ padding: '0.35rem 0.5rem', fontSize: '0.9rem', textAlign: 'center', minWidth: 0 }} />
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{unit}</span>
-      </div>
+      {kind === 'weighted' && (
+        <>
+          <NumField value={set.weight} suffix={unit} inputMode="decimal" step="2.5"
+            onChange={v => onChange({ ...set, weight: v })} />
+          <NumField value={set.reps} suffix="reps"
+            onChange={v => onChange({ ...set, reps: v })} />
+        </>
+      )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <input type="number" inputMode="numeric" value={set.reps ?? ''}
-          onChange={e => onChange({ ...set, reps: Number(e.target.value) })}
-          style={{ padding: '0.35rem 0.5rem', fontSize: '0.9rem', textAlign: 'center', minWidth: 0 }} />
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>reps</span>
-      </div>
+      {kind === 'bodyweight' && (
+        <>
+          <NumField value={set.reps} suffix="reps"
+            onChange={v => onChange({ ...set, reps: v })} />
+          <NumField value={set.addedWeight} suffix={`+${unit}`} inputMode="decimal" step="2.5"
+            onChange={v => onChange({ ...set, addedWeight: v })} />
+        </>
+      )}
 
-      <input type="number" inputMode="numeric" min={1} max={10} placeholder="RPE"
-        value={set.rpe ?? ''}
-        onChange={e => onChange({ ...set, rpe: Number(e.target.value) })}
-        style={{ padding: '0.35rem 0.4rem', fontSize: '0.8rem', textAlign: 'center', minWidth: 0 }} />
+      {kind === 'timed' && (
+        <NumField value={set.seconds} suffix="sec"
+          onChange={v => onChange({ ...set, seconds: v })} />
+      )}
 
-      <button onClick={() => onComplete(set)}
-        style={{
-          width: 36, height: 36, borderRadius: 8,
-          background: set.done ? 'var(--success)20' : 'var(--bg-elevated)',
-          border: `2px solid ${set.done ? 'var(--success)' : 'var(--border)'}`,
-          color: set.done ? 'var(--success)' : 'var(--text-muted)',
-          fontWeight: 800, fontSize: '1rem', flexShrink: 0,
-        }}>
+      <input type="number" inputMode="numeric" min={1} max={10} placeholder="RPE" value={set.rpe ?? ''}
+        onChange={e => onChange({ ...set, rpe: e.target.value === '' ? null : Number(e.target.value) })}
+        style={{ padding: '0.35rem 0.3rem', fontSize: '0.78rem', textAlign: 'center', minWidth: 0 }} />
+
+      <button onClick={() => onComplete(set)} style={{
+        width: 34, height: 34, borderRadius: 8,
+        background: set.done ? 'var(--success)20' : 'var(--bg-elevated)',
+        border: `2px solid ${set.done ? 'var(--success)' : 'var(--border)'}`,
+        color: set.done ? 'var(--success)' : 'var(--text-muted)',
+        fontWeight: 800, fontSize: '1rem', flexShrink: 0,
+      }}>
         {set.done ? '✓' : '○'}
       </button>
     </div>
@@ -101,11 +171,15 @@ export default function GymLogger({ workout, profile, onSave }) {
   const pctDiff = Math.round((mult - 1) * 100);
 
   const [exercises, setExercises] = useState(
-    workout.exercises.map(ex => ({ ...ex, sets: defaultSets(ex, mult) }))
+    workout.exercises.map(ex => {
+      const kind = kindOf(ex);
+      return { ...ex, kind, plannedSets: ex.sets || 3, sets: defaultSets(ex, mult) };
+    })
   );
   const [showTimer, setShowTimer] = useState(false);
   const [expandedEx, setExpandedEx] = useState(0);
-  const [plateEx, setPlateEx] = useState(null); // which exercise's plate sheet is open
+  const [plateEx, setPlateEx] = useState(null);
+  const [swapFor, setSwapFor] = useState(null);
 
   const updateSet = (exIdx, setIdx, newSet) => {
     setExercises(exs => exs.map((ex, i) =>
@@ -126,22 +200,35 @@ export default function GymLogger({ workout, profile, onSave }) {
     }));
   };
 
+  const swapExercise = (exIdx, alt) => {
+    setExercises(exs => exs.map((ex, i) => {
+      if (i !== exIdx) return ex;
+      const proto = {
+        kind: alt.kind,
+        sets: ex.plannedSets || 3,
+        reps: alt.kind === 'timed' ? null : (ex.reps || 8),
+        weight: alt.kind === 'weighted' ? (ex.weight || 0) : null,
+        duration: alt.kind === 'timed' ? (ex.duration || '45s') : null,
+      };
+      return { ...ex, name: alt.name, kind: alt.kind, reps: proto.reps, weight: proto.weight, duration: proto.duration, sets: defaultSets(proto, mult) };
+    }));
+    setSwapFor(null);
+  };
+
   const allDone = exercises.every(ex => ex.sets.filter(s => s.type !== 'warmup').every(s => s.done));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {showTimer && <RestTimer onDismiss={() => setShowTimer(false)} />}
 
-      {/* Wellness adjustment banner */}
       {wellness && pctDiff !== 0 && (
         <div style={{
           padding: '0.6rem 1rem', borderRadius: 'var(--radius)',
           background: pctDiff < 0 ? 'var(--warn)15' : 'var(--success)15',
           border: `1px solid ${pctDiff < 0 ? 'var(--warn)40' : 'var(--success)40'}`,
-          fontSize: '0.8rem', color: pctDiff < 0 ? 'var(--warn)' : 'var(--success)',
-          fontWeight: 600,
+          fontSize: '0.8rem', color: pctDiff < 0 ? 'var(--warn)' : 'var(--success)', fontWeight: 600,
         }}>
-          {pctDiff < 0 ? '⚡' : '🔥'} Wellness adjustment: {pctDiff > 0 ? '+' : ''}{pctDiff}% weight
+          {pctDiff < 0 ? '⚡' : '🔥'} Wellness adjustment: {pctDiff > 0 ? '+' : ''}{pctDiff}% load
           {pctDiff < 0 && ` — ${wellness.fatigue >= 4 ? 'high fatigue' : wellness.soreness >= 4 ? 'high soreness' : 'sub-optimal recovery'}`}
         </div>
       )}
@@ -150,8 +237,7 @@ export default function GymLogger({ workout, profile, onSave }) {
         <PlateSheet
           exercise={{
             ...exercises[plateEx],
-            weight: exercises[plateEx].sets.find(s => !s.done)?.weight
-              ?? exercises[plateEx].weight ?? 0,
+            weight: exercises[plateEx].sets.find(s => !s.done)?.weight ?? exercises[plateEx].weight ?? 0,
             sets: exercises[plateEx].sets.filter(s => s.type === 'normal').length,
           }}
           barWeight={profile.barWeight}
@@ -160,71 +246,111 @@ export default function GymLogger({ workout, profile, onSave }) {
         />
       )}
 
-      {/* Column headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: '28px 32px 1fr 1fr 44px 36px', gap: 6, padding: '0 0 4px' }}>
-        {['Type', '#', 'Weight', 'Reps', 'RPE', '✓'].map(h => (
-          <div key={h} style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center' }}>
-            {h}
-          </div>
-        ))}
-      </div>
+      {exercises.map((ex, exIdx) => {
+        const kind = ex.kind;
+        const activeIdx = ex.sets.findIndex(s => !s.done);
+        return (
+          <div key={exIdx} className="card" style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: expandedEx === exIdx ? '0.75rem' : 0 }}>
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 3 }}>{ex.name}</div>
+                {kind === 'weighted' ? (
+                  <button onClick={() => setPlateEx(exIdx)} style={{
+                    fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700,
+                    background: 'var(--accent)15', border: '1px solid var(--accent)40',
+                    borderRadius: 6, padding: '2px 8px',
+                  }}>
+                    {(ex.sets.find(s => !s.done)?.weight ?? ex.weight ?? 0)} {ex.unit || profile.unit} — plates 🏋️
+                  </button>
+                ) : (
+                  <span style={{
+                    fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600,
+                    background: 'var(--bg-elevated)', borderRadius: 6, padding: '2px 8px',
+                  }}>
+                    {kind === 'timed' ? `⏱ Timed hold` : `💪 Bodyweight`}
+                  </span>
+                )}
+              </div>
 
-      {exercises.map((ex, exIdx) => (
-        <div key={exIdx} className="card">
-          {/* Header row — two separate click zones, no nested buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: expandedEx === exIdx ? '0.75rem' : 0 }}>
-            <div>
-              <div style={{ fontWeight: 700, marginBottom: 3 }}>{ex.name}</div>
-              <button
-                onClick={() => setPlateEx(exIdx)}
-                style={{
-                  fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700,
-                  background: 'var(--accent)15', border: '1px solid var(--accent)40',
-                  borderRadius: 6, padding: '2px 8px',
-                }}>
-                {(exercises[exIdx].sets.find(s => !s.done)?.weight
-                  ?? ex.weight ?? 0)} {ex.unit || profile.unit} — plates 🏋️
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                {/* 3-dot swap menu */}
+                <button
+                  aria-label="Exercise options"
+                  onClick={() => setSwapFor(swapFor === exIdx ? null : exIdx)}
+                  style={{ padding: '2px 6px', fontSize: '1.1rem', color: 'var(--text-muted)', lineHeight: 1 }}>
+                  ⋮
+                </button>
+                <button
+                  onClick={() => setExpandedEx(expandedEx === exIdx ? -1 : exIdx)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: '2px 0' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {ex.sets.filter(s => s.done).length}/{ex.sets.length}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    {expandedEx === exIdx ? '▲' : '▼'}
+                  </span>
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => setExpandedEx(expandedEx === exIdx ? -1 : exIdx)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: '2px 0', flexShrink: 0 }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {ex.sets.filter(s => s.done).length}/{ex.sets.length}
-              </span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                {expandedEx === exIdx ? '▲' : '▼'}
-              </span>
-            </button>
-          </div>
 
-          {expandedEx === exIdx && (
-            <>
-              {ex.sets.map((set, setIdx) => {
-                const activeIdx = ex.sets.findIndex(s => !s.done);
-                return (
-                  <SetRow key={setIdx} set={set} index={setIdx}
+            {/* Swap dropdown */}
+            {swapFor === exIdx && (
+              <>
+                <div onClick={() => setSwapFor(null)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 30 }} />
+                <div style={{
+                  position: 'absolute', right: 12, top: 44, zIndex: 31,
+                  background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                  borderRadius: 10, padding: 6, minWidth: 200,
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                }}>
+                  <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', padding: '4px 8px' }}>
+                    Swap exercise
+                  </div>
+                  {altsFor(ex.name).length === 0 && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '6px 8px' }}>No alternatives</div>
+                  )}
+                  {altsFor(ex.name).map(alt => (
+                    <button key={alt.name} onClick={() => swapExercise(exIdx, alt)}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%',
+                        padding: '0.5rem 0.5rem', borderRadius: 6, textAlign: 'left', fontSize: '0.88rem',
+                      }}>
+                      <span>{alt.name}</span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        {alt.kind === 'timed' ? '⏱' : alt.kind === 'bodyweight' ? '💪' : '🏋️'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {expandedEx === exIdx && (
+              <>
+                {ex.sets.map((set, setIdx) => (
+                  <SetRow key={setIdx} set={set} index={setIdx} kind={kind}
                     unit={ex.unit || profile.unit}
                     isActive={!set.done && setIdx === activeIdx}
                     onChange={(newSet) => updateSet(exIdx, setIdx, newSet)}
                     onComplete={() => completeSet(exIdx, setIdx)}
                   />
-                );
-              })}
-              <button onClick={() => addSet(exIdx)} style={{
-                marginTop: '0.75rem', width: '100%', padding: '0.5rem',
-                borderRadius: 'var(--radius)', border: '1px dashed var(--border)',
-                color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600,
-              }}>
-                + Add Set
-              </button>
-            </>
-          )}
-        </div>
-      ))}
+                ))}
+                <button onClick={() => addSet(exIdx)} style={{
+                  marginTop: '0.75rem', width: '100%', padding: '0.5rem',
+                  borderRadius: 'var(--radius)', border: '1px dashed var(--border)',
+                  color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600,
+                }}>
+                  + Add Set
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })}
 
       <button className={`btn ${allDone ? 'btn-primary' : 'btn-secondary'}`}
-        onClick={() => onSave(exercises.map(ex => ({ name: ex.name, sets: ex.sets })))}>
+        onClick={() => onSave(exercises.map(ex => ({ name: ex.name, kind: ex.kind, sets: ex.sets })))}>
         {allDone ? 'Complete Session ✓' : 'Save Progress'}
       </button>
     </div>

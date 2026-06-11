@@ -13,6 +13,10 @@ export default function Settings() {
     name: profile?.name || '',
     unit: profile?.unit || 'kg',
     barWeight: profile?.barWeight || 20,
+    bodyweight: profile?.bodyweight ?? '',
+    height: profile?.height ?? '',
+    age: profile?.age ?? '',
+    sex: profile?.sex || '',
     startDate: profile?.startDate || todayStr,
   });
   const [planStartSaved, setPlanStartSaved] = useState(false);
@@ -36,7 +40,13 @@ export default function Settings() {
   const barOptions = getBarOptions(form.unit);
 
   const saveProfile = () => {
-    const updated = { ...profile, ...form, barWeight: Number(form.barWeight) };
+    const updated = {
+      ...profile, ...form,
+      barWeight: Number(form.barWeight),
+      bodyweight: Number(form.bodyweight) || 0,
+      height: Number(form.height) || 0,
+      age: Number(form.age) || 0,
+    };
     storage.setProfile(updated);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -96,6 +106,36 @@ export default function Settings() {
                   {o.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Body Metrics</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="number" inputMode="decimal" placeholder="Bodyweight"
+                  value={form.bodyweight} onChange={e => set('bodyweight', e.target.value)} />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{form.unit}</span>
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="number" inputMode="numeric" placeholder="Height"
+                  value={form.height} onChange={e => set('height', e.target.value)} />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>cm</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input type="number" inputMode="numeric" placeholder="Age" style={{ flex: 1 }}
+                value={form.age} onChange={e => set('age', e.target.value)} />
+              <div style={{ flex: 2, display: 'flex', gap: 6 }}>
+                {['M', 'F', '—'].map(s => (
+                  <button key={s} type="button"
+                    className={`btn ${form.sex === s ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1, padding: '0.6rem 0' }}
+                    onClick={() => set('sex', s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -263,6 +303,9 @@ export default function Settings() {
 
       <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', paddingBottom: '1rem' }}>
         TACFIT · All data stored on this device
+        <div style={{ marginTop: 4, fontSize: '0.68rem', color: 'var(--text-muted)', opacity: 0.7 }}>
+          v{__APP_VERSION__} · build {__BUILD_TIME__}
+        </div>
       </div>
     </div>
   );

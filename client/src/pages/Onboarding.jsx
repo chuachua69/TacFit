@@ -70,6 +70,10 @@ export default function Onboarding() {
     name: '',
     unit: 'kg',
     barWeight: 20,
+    bodyweight: '',
+    height: '',
+    age: '',
+    sex: '',
     focus: 'balanced',
     schedule: DEFAULT_SCHEDULE,
     baselines: {
@@ -106,6 +110,10 @@ export default function Onboarding() {
       name: form.name,
       unit: form.unit,
       barWeight: Number(form.barWeight),
+      bodyweight: Number(form.bodyweight) || 0,
+      height: Number(form.height) || 0,
+      age: Number(form.age) || 0,
+      sex: form.sex || '',
       focus: form.focus,
       schedule: form.schedule,
       sessionsPerWeek: countSessions(form.schedule),
@@ -176,6 +184,43 @@ export default function Onboarding() {
                   {o.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Body Metrics</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input type="number" inputMode="decimal" placeholder="Bodyweight"
+                    value={form.bodyweight} onChange={e => set('bodyweight', e.target.value)} />
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{form.unit}</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input type="number" inputMode="numeric" placeholder="Height"
+                    value={form.height} onChange={e => set('height', e.target.value)} />
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>cm</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input type="number" inputMode="numeric" placeholder="Age" style={{ flex: 1 }}
+                value={form.age} onChange={e => set('age', e.target.value)} />
+              <div style={{ flex: 2, display: 'flex', gap: 6 }}>
+                {['M', 'F', '—'].map(s => (
+                  <button key={s} type="button"
+                    className={`btn ${form.sex === s ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1, padding: '0.6rem 0' }}
+                    onClick={() => set('sex', s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+              Bodyweight powers relative-load targets (e.g. bench at bodyweight).
             </div>
           </div>
 
