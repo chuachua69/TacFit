@@ -113,7 +113,7 @@ export default function SessionDetail() {
       {/* Workout content */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-        {status === 'pending' && <WarmupCooldown discipline={session.discipline} phase="warmup" />}
+        {status === 'pending' && <WarmupCooldown discipline={session.discipline} workout={workout} phase="warmup" />}
 
         {/* GYM — interactive logger */}
         {workout?.type === 'gym' && status === 'pending' && (
@@ -215,7 +215,7 @@ export default function SessionDetail() {
           </div>
         )}
 
-        {status === 'pending' && <WarmupCooldown discipline={session.discipline} phase="cooldown" />}
+        {status === 'pending' && <WarmupCooldown discipline={session.discipline} workout={workout} phase="cooldown" />}
       </div>
 
       {/* Actions for non-gym pending sessions */}

@@ -2,9 +2,17 @@ import { useState } from 'react';
 import EventTimer from './EventTimer';
 
 const PLANS = {
+  gymLower: {
+    warmup: { mins: 6, items: ['3 min easy cardio (bike / row / skip)', 'Hip circles & leg swings ×10 / side', 'Ankle rocks ×10 / side', 'Bodyweight squats ×15 → goblet squats ×10', '2 ramp-up sets on the main lift'] },
+    cooldown: { mins: 4, items: ['Couch / hip-flexor stretch ×30s / side', 'Hamstring stretch ×30s / side', 'Glute & piriformis stretch ×30s', 'Calf stretch ×30s'] },
+  },
+  gymUpper: {
+    warmup: { mins: 6, items: ['3 min easy cardio / row', 'Band pull-aparts ×20', 'Shoulder dislocates / pass-throughs ×10', 'Scap push-ups & arm circles ×10', '2 ramp-up sets on the main lift'] },
+    cooldown: { mins: 3, items: ['Doorway chest stretch ×30s / side', 'Tricep & lat stretch ×30s / side', 'Cross-body shoulder stretch ×30s', 'Neck & trap release'] },
+  },
   gym: {
-    warmup: { mins: 5, items: ['3 min easy cardio (row / bike / skip)', 'Leg swings ×10 / side', 'Band pull-aparts & arm circles ×15', '2 ramp-up sets on your first lift'] },
-    cooldown: { mins: 3, items: ['Hip-flexor stretch ×30s / side', 'Doorway chest stretch ×30s', 'Lat & shoulder stretch ×30s', 'Slow nasal breathing'] },
+    warmup: { mins: 5, items: ['3 min easy cardio', 'Leg swings ×10 / side', 'Band pull-aparts & arm circles ×15', '2 ramp-up sets on your first lift'] },
+    cooldown: { mins: 3, items: ['Hip-flexor stretch ×30s / side', 'Chest & shoulder stretch ×30s', 'Lat stretch ×30s', 'Slow nasal breathing'] },
   },
   run: {
     warmup: { mins: 5, items: ['3 min easy jog', 'High knees & butt kicks ×20m', 'Leg swings ×10 / side', '2–3 × 20m strides'] },
@@ -20,8 +28,20 @@ const PLANS = {
   },
 };
 
-export default function WarmupCooldown({ discipline, phase }) {
-  const plan = (PLANS[discipline] || PLANS.gym)[phase];
+function planKey(discipline, workout) {
+  if (discipline === 'gym') {
+    const focus = (workout?.focus || '').toLowerCase();
+    const names = (workout?.exercises || []).map(e => (e.name || '').toLowerCase()).join(' ');
+    if (focus.includes('lower') || /squat|deadlift|lunge|hip thrust/.test(names)) return 'gymLower';
+    if (focus.includes('upper') || /bench|press|pull|row|dip/.test(names)) return 'gymUpper';
+    return 'gym';
+  }
+  return discipline;
+}
+
+export default function WarmupCooldown({ discipline, workout, phase }) {
+  const key = planKey(discipline, workout);
+  const plan = (PLANS[key] || PLANS.gym)[phase];
   const [open, setOpen] = useState(phase === 'warmup');
   const [timer, setTimer] = useState(false);
   if (!plan) return null;

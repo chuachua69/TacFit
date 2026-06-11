@@ -5,6 +5,7 @@ import { getBarOptions } from '../lib/plateCalc';
 import { generatePlan } from '../lib/planEngine';
 import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
 import Collapsible from '../components/Collapsible';
+import { downloadICS } from '../lib/icsExport';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -264,7 +265,17 @@ export default function Settings() {
       </Collapsible>
 
       {/* Plan actions */}
-      <Collapsible title="Plan" subtitle="Regenerate or reset">
+      <Collapsible title="Plan" subtitle="Calendar export · regenerate · reset">
+          <div>
+            <button className="btn btn-secondary" onClick={() => { const p = storage.getPlan(); if (p) downloadICS(p); }}>
+              📅 Add Schedule to Calendar (.ics)
+            </button>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+              Downloads a calendar file — open it to import into Google / Apple / Outlook.
+              Sessions default to 07:00 (AM) and 18:00 (PM); adjust times in your calendar app.
+            </div>
+          </div>
+
           <button className="btn btn-secondary" onClick={resetPlan}>
             Regenerate Plan (keep baselines)
           </button>

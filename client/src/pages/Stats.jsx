@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../store/storage';
 import BottomNav from '../components/BottomNav';
+import RadarChart from '../components/RadarChart';
+import { computeProfile } from '../lib/fitnessProfile';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
 const DISC_COLOR = { run: 'var(--run)', swim: 'var(--swim)', ruck: 'var(--ruck)', gym: 'var(--gym)' };
@@ -79,6 +81,10 @@ export default function Stats() {
   const opTests = storage.getOperatorTests();
   const lastOp = opTests[opTests.length - 1];
 
+  // Fitness profile (radar)
+  const fitness = computeProfile({ profile, logs, plan, operatorTests: opTests });
+  const rated = fitness.axes.filter(a => a.value > 0).length;
+
   return (
     <div className="screen" style={{ paddingTop: '1.5rem', paddingBottom: '5rem', gap: '1.25rem' }}>
       <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>
@@ -108,6 +114,29 @@ export default function Stats() {
               <div style={{ fontWeight: 800, fontSize: '1.2rem', color }}>{value}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Fitness profile radar */}
+      <div>
+        <div className="label">Fitness Profile</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          {rated >= 3 ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent)' }}>{fitness.overall}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>overall rating</span>
+              </div>
+              <RadarChart axes={fitness.axes} />
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 4 }}>
+                Indicative scores from your baselines, bodyweight &amp; consistency.
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
+              Add your bodyweight &amp; baselines in Settings to unlock your strength radar.
+            </div>
+          )}
         </div>
       </div>
 
