@@ -3,6 +3,7 @@ const KEYS = {
   PLAN: 'tacfit_plan',
   LOGS: 'tacfit_logs',
   WELLNESS: 'tacfit_wellness',
+  OPERATOR: 'tacfit_operator',
 };
 
 export const storage = {
@@ -36,6 +37,14 @@ export const storage = {
   getTodayWellness: () => {
     const today = new Date().toISOString().split('T')[0];
     return storage.getWellness().find(w => w.date === today) || null;
+  },
+
+  // Operator assessment attempts (most recent last)
+  getOperatorTests: () => JSON.parse(localStorage.getItem(KEYS.OPERATOR) || '[]'),
+  addOperatorTest: (test) => {
+    const all = storage.getOperatorTests();
+    all.push(test);
+    localStorage.setItem(KEYS.OPERATOR, JSON.stringify(all));
   },
 
   clearAll: () => Object.values(KEYS).forEach(k => localStorage.removeItem(k)),
