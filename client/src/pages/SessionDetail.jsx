@@ -7,6 +7,7 @@ import PlateDisplay from '../components/PlateDisplay';
 import MissedModal from '../components/MissedModal';
 import ShareWorkout from '../components/ShareWorkout';
 import FileImport from '../components/FileImport';
+import WarmupCooldown from '../components/WarmupCooldown';
 import { fmtTime } from '../components/WheelPicker';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
@@ -112,6 +113,8 @@ export default function SessionDetail() {
       {/* Workout content */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
+        {status === 'pending' && <WarmupCooldown discipline={session.discipline} phase="warmup" />}
+
         {/* GYM — interactive logger */}
         {workout?.type === 'gym' && status === 'pending' && (
           <GymLogger workout={workout} profile={profile} onSave={markDone} />
@@ -211,6 +214,8 @@ export default function SessionDetail() {
             </div>
           </div>
         )}
+
+        {status === 'pending' && <WarmupCooldown discipline={session.discipline} phase="cooldown" />}
       </div>
 
       {/* Actions for non-gym pending sessions */}
