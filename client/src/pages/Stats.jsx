@@ -6,6 +6,21 @@ const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️' };
 const DISC_COLOR = { run: 'var(--run)', swim: 'var(--swim)', ruck: 'var(--ruck)', gym: 'var(--gym)' };
 const DISCIPLINES = ['gym', 'run', 'swim', 'ruck'];
 
+// Epley estimated 1RM
+const e1rm = (w, reps) => Math.round(w * (1 + reps / 30));
+
+function Spark({ data, color = 'var(--accent)', w = 70, h = 22 }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data), max = Math.max(...data);
+  const rng = max - min || 1;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / rng) * (h - 3) - 1.5}`).join(' ');
+  return (
+    <svg width={w} height={h} style={{ overflow: 'visible' }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function Stats() {
   const plan = storage.getPlan();
   const logs = storage.getLogs();
@@ -33,15 +48,36 @@ export default function Stats() {
     discStats[d] = { total: sessions.length, done };
   });
 
-  // Gym PRs from log data
-  const prs = {};
+  const profile = storage.getProfile();
+  const unit = profile?.unit || 'kg';
+  const bw = Number(profile?.bodyweight) || 0;
+
+  // Per-exercise estimated-1RM history from gym logs
+  const exHist = {};
   doneLogs.filter(l => l.gymData).forEach(log => {
+    const date = log.completedAt?.split('T')[0] || '';
     log.gymData.forEach(ex => {
-      ex.sets?.filter(s => s.type === 'normal' && s.done && s.weight > 0).forEach(s => {
-        if (!prs[ex.name] || s.weight > prs[ex.name]) prs[ex.name] = s.weight;
+      ex.sets?.filter(s => s.type === 'normal' && s.done && s.weight > 0 && s.reps > 0).forEach(s => {
+        (exHist[ex.name] ||= []).push({ date, t: log.completedAt || date, e1rm: e1rm(s.weight, s.reps), weight: s.weight, reps: s.reps });
       });
     });
   });
+
+  const strength = Object.entries(exHist).map(([name, arr]) => {
+    const sorted = [...arr].sort((a, b) => String(a.t).localeCompare(String(b.t)));
+    const best = arr.reduce((m, x) => (x.e1rm > m.e1rm ? x : m), arr[0]);
+    const byDate = {};
+    sorted.forEach(x => { byDate[x.date] = Math.max(byDate[x.date] || 0, x.e1rm); });
+    const dates = Object.keys(byDate).sort();
+    const series = dates.map(d => byDate[d]);
+    const latestDate = dates[dates.length - 1];
+    const isPR = series.length > 1 && byDate[latestDate] === Math.max(...series) && best.date === latestDate;
+    return { name, best, series, isPR };
+  }).sort((a, b) => b.best.e1rm - a.best.e1rm);
+
+  // Latest operator assessment
+  const opTests = storage.getOperatorTests();
+  const lastOp = opTests[opTests.length - 1];
 
   return (
     <div className="screen" style={{ paddingTop: '1.5rem', paddingBottom: '5rem', gap: '1.25rem' }}>
@@ -101,21 +137,57 @@ export default function Stats() {
         </div>
       </div>
 
-      {/* Gym PRs */}
-      {Object.keys(prs).length > 0 && (
+      {/* Latest Operator score */}
+      {lastOp && (
+        <button className="card" onClick={() => navigate('/operator')}
+          style={{ width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--accent)40' }}>
+          <span style={{ fontSize: '1.5rem' }}>🎯</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700 }}>Operator Assessment</div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              {lastOp.totalBonus.toFixed(1)} pts · {lastOp.tierLabel}
+            </div>
+          </div>
+          <span style={{ fontSize: '1.1rem', color: 'var(--accent)' }}>→</span>
+        </button>
+      )}
+
+      {/* Strength — estimated 1RM with progression */}
+      {strength.length > 0 && (
         <div>
-          <div className="label">Gym PRs 🏋️</div>
-          <div className="card" style={{ padding: '0.5rem 1rem' }}>
-            {Object.entries(prs).sort((a, b) => b[1] - a[1]).map(([name, weight], i, arr) => (
-              <div key={name} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0.6rem 0',
-                borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+          <div className="label">
+            Strength · est. 1RM {bw > 0 && <span style={{ textTransform: 'none', fontWeight: 400 }}>· BW {bw} {unit}</span>}
+          </div>
+          <div className="card" style={{ padding: '0.25rem 1rem' }}>
+            {strength.map((s, i) => (
+              <div key={s.name} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+                padding: '0.7rem 0',
+                borderBottom: i < strength.length - 1 ? '1px solid var(--border)' : 'none',
               }}>
-                <span style={{ fontSize: '0.9rem' }}>{name}</span>
-                <span style={{ fontWeight: 800, color: 'var(--accent)', fontSize: '1rem' }}>{weight} kg</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {s.name}
+                    {s.isPR && (
+                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--success)', background: 'var(--success)20', borderRadius: 999, padding: '1px 6px' }}>
+                        🏆 PR
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 1 }}>
+                    from {s.best.weight}{unit} × {s.best.reps}
+                    {bw > 0 ? ` · ${(s.best.e1rm / bw).toFixed(2)}× BW` : ''}
+                  </div>
+                </div>
+                <Spark data={s.series} />
+                <span style={{ fontWeight: 800, color: 'var(--accent)', fontSize: '1rem', minWidth: 56, textAlign: 'right' }}>
+                  {s.best.e1rm} {unit}
+                </span>
               </div>
             ))}
+          </div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 6 }}>
+            Estimated 1RM (Epley) from your logged working sets. 🏆 = set in your latest session.
           </div>
         </div>
       )}
