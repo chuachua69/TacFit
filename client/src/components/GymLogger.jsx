@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import RestTimer from './RestTimer';
 import PlateSheet from './PlateSheet';
+import ExerciseInfo from './ExerciseInfo';
 import { storage } from '../store/storage';
 
 const SET_TYPES = ['warmup', 'normal', 'dropset'];
@@ -180,6 +181,7 @@ export default function GymLogger({ workout, profile, onSave }) {
   const [expandedEx, setExpandedEx] = useState(0);
   const [plateEx, setPlateEx] = useState(null);
   const [swapFor, setSwapFor] = useState(null);
+  const [infoName, setInfoName] = useState(null);
 
   const updateSet = (exIdx, setIdx, newSet) => {
     setExercises(exs => exs.map((ex, i) =>
@@ -220,6 +222,7 @@ export default function GymLogger({ workout, profile, onSave }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {showTimer && <RestTimer onDismiss={() => setShowTimer(false)} />}
+      {infoName && <ExerciseInfo name={infoName} onClose={() => setInfoName(null)} />}
 
       {wellness && pctDiff !== 0 && (
         <div style={{
@@ -304,6 +307,14 @@ export default function GymLogger({ workout, profile, onSave }) {
                   borderRadius: 10, padding: 6, minWidth: 200,
                   boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                 }}>
+                  <button onClick={() => { setInfoName(ex.name); setSwapFor(null); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                      padding: '0.5rem 0.5rem', borderRadius: 6, textAlign: 'left', fontSize: '0.88rem',
+                      borderBottom: '1px solid var(--border)', marginBottom: 4,
+                    }}>
+                    ⓘ <span>Form &amp; cues</span>
+                  </button>
                   <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', padding: '4px 8px' }}>
                     Swap exercise
                   </div>
