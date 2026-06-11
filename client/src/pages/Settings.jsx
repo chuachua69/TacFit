@@ -6,6 +6,7 @@ import { generatePlan } from '../lib/planEngine';
 import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
 import Collapsible from '../components/Collapsible';
 import { downloadICS, planToEvents } from '../lib/icsExport';
+import { normalizeRanking, DISC_LABEL, DISC_EMOJI } from '../lib/focus';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -25,6 +26,21 @@ export default function Settings() {
   });
   const [planStartSaved, setPlanStartSaved] = useState(false);
   const [timesSaved, setTimesSaved] = useState(false);
+  const [ranking, setRanking] = useState(() => normalizeRanking(profile?.focusRanking));
+  const [rankSaved, setRankSaved] = useState(false);
+
+  const moveRank = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= ranking.length) return;
+    const next = [...ranking];
+    [next[i], next[j]] = [next[j], next[i]];
+    setRanking(next);
+  };
+  const saveRanking = () => {
+    storage.setProfile({ ...storage.getProfile(), focusRanking: ranking });
+    setRankSaved(true);
+    setTimeout(() => setRankSaved(false), 2000);
+  };
 
   const saveTimes = () => {
     const updated = { ...storage.getProfile(), amTime: form.amTime, pmTime: form.pmTime };
@@ -246,6 +262,26 @@ export default function Settings() {
 
           <button className="btn btn-primary" onClick={() => saveBaselines(setCardioSaved)}>
             {cardioSaved ? 'Saved & Plan Updated ✓' : 'Save & Regenerate Plan'}
+          </button>
+      </Collapsible>
+
+      {/* Focus priority */}
+      <Collapsible title="Focus Priority" subtitle="Drives Baseline-test recommendations">
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Rank what matters most. The Baseline test recommends re-measuring your top priorities.
+          </div>
+          {ranking.map((d, i) => (
+            <div key={d} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.45rem 0.5rem', background: 'var(--bg-elevated)', borderRadius: 8 }}>
+              <span style={{ width: 18, fontWeight: 800, color: 'var(--accent)' }}>{i + 1}</span>
+              <span style={{ flex: 1 }}>{DISC_EMOJI[d]} {DISC_LABEL[d]}</span>
+              <button onClick={() => moveRank(i, -1)} disabled={i === 0}
+                style={{ padding: '2px 8px', opacity: i === 0 ? 0.3 : 1, color: 'var(--text-muted)' }}>▲</button>
+              <button onClick={() => moveRank(i, 1)} disabled={i === ranking.length - 1}
+                style={{ padding: '2px 8px', opacity: i === ranking.length - 1 ? 0.3 : 1, color: 'var(--text-muted)' }}>▼</button>
+            </div>
+          ))}
+          <button className="btn btn-primary" onClick={saveRanking}>
+            {rankSaved ? 'Saved ✓' : 'Save Priority'}
           </button>
       </Collapsible>
 

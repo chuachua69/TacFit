@@ -5,6 +5,7 @@ import { generatePlan } from '../lib/planEngine';
 import { getBarOptions } from '../lib/plateCalc';
 import { TimePicker, NumberWheel, fmtTime } from '../components/WheelPicker';
 import FileImport from '../components/FileImport';
+import { defaultRanking } from '../lib/focus';
 
 // Convert an imported activity into the baseline value for a given field
 function deriveBaseline(key, r) {
@@ -30,6 +31,7 @@ const DEFAULT_SCHEDULE = {
 
 const FOCUSES = [
   { value: 'balanced', label: 'Balanced', desc: 'All 4 disciplines equally' },
+  { value: 'operator', label: 'Operator Prep', desc: 'Build toward the 5-event operator test' },
   { value: 'run', label: 'Run', desc: 'Improve 2.4km / run endurance' },
   { value: 'gym', label: 'Strength', desc: 'Build power and muscle' },
   { value: 'ruck', label: 'Ruck', desc: 'Loaded march capacity' },
@@ -119,6 +121,7 @@ export default function Onboarding() {
       amTime: form.amTime,
       pmTime: form.pmTime,
       focus: form.focus,
+      focusRanking: defaultRanking(form.focus),
       schedule: form.schedule,
       sessionsPerWeek: countSessions(form.schedule),
       rmMode,

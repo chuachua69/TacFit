@@ -15,9 +15,19 @@ const DAYS_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 // Discipline rotation by sessions count (capped at 14 for AM+PM full week)
 const BASE_DISCIPLINES = ['gym', 'run', 'swim', 'gym', 'ruck', 'run', 'swim', 'gym', 'ruck', 'run', 'gym', 'swim', 'ruck', 'run'];
 
+const ROTATION_DISCIPLINES = ['gym', 'run', 'swim', 'ruck'];
+
 function buildRotation(sessionsCount, focus) {
   const base = BASE_DISCIPLINES.slice(0, sessionsCount);
-  if (!focus || focus === 'balanced') return base;
+  // 'operator' biases towards extra gym work
+  if (focus === 'operator') {
+    const counts = {};
+    base.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
+    const least = Object.entries(counts).sort((a, b) => a[1] - b[1])[0]?.[0];
+    if (least && least !== 'gym') base[base.lastIndexOf(least)] = 'gym';
+    return base;
+  }
+  if (!focus || focus === 'balanced' || !ROTATION_DISCIPLINES.includes(focus)) return base;
   // Replace one occurrence of the least-represented discipline with focus
   const counts = {};
   base.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
@@ -103,6 +113,39 @@ function gymSession(profile, phase, gymIndex) {
       ],
     };
   }
+}
+
+// --- Operator-prep gym generator (builds toward the 5-event test) ---
+function operatorGymSession(profile, phase, gymIndex) {
+  const { baselines, unit } = profile;
+  const u = unit === 'lbs' ? 'lbs' : 'kg';
+  const i = phase.intensityMult;
+  const v = phase.volumeMult;
+  const ww = (oneRM, pct) => Math.round((oneRM * pct) / 2.5) * 2.5;
+  const sets = Math.max(2, Math.round(3 * v));
+  const reps = phase.name === 'Peak' ? 5 : phase.name === 'Deload' ? 10 : 8;
+
+  const isPower = gymIndex % 2 === 0;
+  if (isPower) {
+    return {
+      type: 'gym', focus: 'Operator Power',
+      exercises: [
+        { name: 'Clean & Press',  sets, reps, weight: ww(baselines.ohp, i),            unit: u },
+        { name: 'Walking Lunges', sets, reps, weight: ww(baselines.squat, i * 0.5),    unit: u },
+        { name: 'Farmer Carry',   sets: 3, reps: null, duration: Math.round(40 * v) + 's', unit: null },
+        { name: 'Plank',          sets: 3, reps: null, duration: Math.round(45 * v) + 's', unit: null },
+      ],
+    };
+  }
+  return {
+    type: 'gym', focus: 'Operator Strength',
+    exercises: [
+      { name: 'Bench Press',       sets, reps, weight: ww(baselines.bench, i),         unit: u },
+      { name: 'Weighted Pull-ups', sets, reps: Math.round(reps * 0.7), weight: null,   unit: null },
+      { name: 'Bent-over Row',     sets, reps, weight: ww(baselines.row, i),           unit: u },
+      { name: 'Hanging Leg Raise', sets: 3, reps: 12, weight: null,                    unit: null },
+    ],
+  };
 }
 
 // --- Run session generator ---
@@ -194,7 +237,7 @@ export function generatePlan(profile) {
     const sessions = slots.map((slot, slotIdx) => {
       const discipline = rotation[slotIdx % rotation.length];
       let workout;
-      if (discipline === 'gym')  workout = gymSession(profile, phase, gymIdx++);
+      if (discipline === 'gym')  workout = profile.focus === 'operator' ? operatorGymSession(profile, phase, gymIdx++) : gymSession(profile, phase, gymIdx++);
       else if (discipline === 'run')  workout = runSession(profile, phase);
       else if (discipline === 'swim') workout = swimSession(profile, phase);
       else if (discipline === 'ruck') workout = ruckSession(profile, phase);

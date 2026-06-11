@@ -200,7 +200,7 @@ export default function Operator() {
           </div>
         </div>
       )}
-      <BottomNav active="operator" />
+      <BottomNav active="test" />
     </div>
   );
 }

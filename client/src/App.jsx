@@ -10,6 +10,8 @@ import Assessment from './pages/Assessment';
 import Bunk from './pages/Bunk';
 import Stats from './pages/Stats';
 import Operator from './pages/Operator';
+import TestHub from './pages/TestHub';
+import Baseline from './pages/Baseline';
 import ReloadPrompt from './components/ReloadPrompt';
 import './styles/global.css';
 
@@ -46,7 +48,9 @@ function App() {
         <Route path="/assessment" element={<Assessment />} />
         <Route path="/bunk" element={<Bunk />} />
         <Route path="/stats" element={<Stats />} />
+        <Route path="/test" element={<TestHub />} />
         <Route path="/operator" element={<Operator />} />
+        <Route path="/baseline" element={<Baseline />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
