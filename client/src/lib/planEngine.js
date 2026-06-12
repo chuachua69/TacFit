@@ -1,6 +1,8 @@
 // 6-week periodisation engine
 // Phases: Build (wk1-2), Intensify (wk3-4), Peak (wk5), Deload (wk6)
 
+import { storage } from '../store/storage';
+
 const PHASES = [
   { week: 1, name: 'Build',     volumeMult: 0.75, intensityMult: 0.70 },
   { week: 2, name: 'Build',     volumeMult: 0.85, intensityMult: 0.75 },

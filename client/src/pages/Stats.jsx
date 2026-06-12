@@ -37,8 +37,10 @@ export default function Stats() {
   }
 
   const allSessions = plan.weeks.flatMap(w => w.sessions);
-  const doneLogs = logs.filter(l => l.status === 'done');
-  const missedLogs = logs.filter(l => l.status && l.status !== 'done');
+  // Only count logs that belong to plan sessions (ad-hoc WOD logs are separate)
+  const planIds = new Set(allSessions.map(s => s.id));
+  const doneLogs = logs.filter(l => l.status === 'done' && planIds.has(l.sessionId));
+  const missedLogs = logs.filter(l => l.status && l.status !== 'done' && planIds.has(l.sessionId));
   const completion = allSessions.length > 0 ? doneLogs.length / allSessions.length : 0;
   const doneDays = new Set(doneLogs.map(l => l.completedAt?.split('T')[0]).filter(Boolean)).size;
 
@@ -126,7 +128,7 @@ export default function Stats() {
               </div>
               <RadarChart axes={fitness.axes} />
               <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 4 }}>
-                Indicative scores from your baselines, bodyweight &amp; consistency.
+                Scored against untrained → elite reference standards, relative to your bodyweight.
               </div>
             </>
           ) : (

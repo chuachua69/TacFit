@@ -1,54 +1,76 @@
 /**
- * Derive a 6-axis fitness profile (0–100 per axis) from the user's baselines,
- * bodyweight, plan completion and operator data. Scores are indicative — mapped
- * against rough recreational→strong reference standards.
+ * Derive a 5-axis fitness profile (0–100 per axis) from the user's baselines
+ * and bodyweight. Each axis is scored against piecewise reference standards
+ * (untrained → recreational → trained → strong → elite) rather than a single
+ * linear ramp, so mid-range performers aren't crushed to the floor and elite
+ * marks aren't trivially capped.
  */
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
-// linear map: input a→ya, b→yb (works for decreasing ranges too)
-const lin = (x, a, b, ya, yb) => ya + ((x - a) * (yb - ya)) / (b - a);
 
-export function computeProfile({ profile, logs = [], plan, operatorTests = [] }) {
+// Piecewise-linear interpolation through [x, score] anchor points.
+// Points may be ascending or descending in x (times: lower is better).
+function piecewise(x, pts) {
+  const asc = pts[0][0] < pts[pts.length - 1][0];
+  const p = asc ? pts : [...pts].reverse();
+  if (x <= p[0][0]) return p[0][1];
+  if (x >= p[p.length - 1][0]) return p[p.length - 1][1];
+  for (let i = 1; i < p.length; i++) {
+    if (x <= p[i][0]) {
+      const [a, ya] = p[i - 1];
+      const [b, yb] = p[i];
+      return ya + ((x - a) * (yb - ya)) / (b - a);
+    }
+  }
+  return p[p.length - 1][1];
+}
+
+export function computeProfile({ profile }) {
   const bw = Number(profile?.bodyweight) || 0;
   const bl = profile?.baselines || {};
 
-  // Strength — relative (sum of squat+dead+bench)/bodyweight, else absolute
+  // Strength — squat+deadlift+bench total, relative to bodyweight when known.
+  // Anchors: 1.5×BW untrained → 3×BW trained → 5.5×BW elite.
   let strength = 0;
   const sumLifts = (bl.squat || 0) + (bl.deadlift || 0) + (bl.bench || 0);
-  if (bw > 0 && sumLifts > 0) strength = clamp(lin(sumLifts / bw, 2.0, 4.75, 20, 100));
-  else if (sumLifts > 0) strength = clamp(lin(sumLifts, 150, 450, 20, 100));
+  if (bw > 0 && sumLifts > 0) {
+    strength = piecewise(sumLifts / bw, [[1.5, 10], [2.5, 40], [3.5, 65], [4.5, 85], [5.5, 100]]);
+  } else if (sumLifts > 0) {
+    strength = piecewise(sumLifts, [[150, 10], [250, 40], [350, 65], [450, 85], [550, 100]]);
+  }
 
-  // Power — overhead press relative to bodyweight
+  // Power — overhead press relative to bodyweight.
+  // 0.35×BW untrained → 0.75×BW trained → 1.15×BW elite.
   let power = 0;
-  if (bw > 0 && bl.ohp) power = clamp(lin(bl.ohp / bw, 0.45, 1.1, 20, 100));
-  else if (bl.ohp) power = clamp(lin(bl.ohp, 30, 90, 20, 100));
+  if (bw > 0 && bl.ohp) {
+    power = piecewise(bl.ohp / bw, [[0.35, 10], [0.55, 40], [0.75, 65], [0.95, 85], [1.15, 100]]);
+  } else if (bl.ohp) {
+    power = piecewise(bl.ohp, [[30, 10], [45, 40], [60, 65], [80, 85], [95, 100]]);
+  }
 
-  // Run — 2.4km time (faster = higher)
+  // Run — 2.4km time. 16:00 slow → 11:30 solid → 8:00 elite.
   let run = 0;
-  if (bl.run2400s) run = clamp(lin(bl.run2400s, 900, 480, 20, 100));
+  if (bl.run2400s) {
+    run = piecewise(bl.run2400s, [[960, 10], [810, 40], [690, 65], [570, 85], [480, 100]]);
+  }
 
-  // Swim — 400m time
+  // Swim — 400m time. 13:00 slow → 9:00 solid → 6:15 elite.
   let swim = 0;
-  if (bl.swim400s) swim = clamp(lin(bl.swim400s, 720, 360, 20, 100));
+  if (bl.swim400s) {
+    swim = piecewise(bl.swim400s, [[780, 10], [660, 40], [540, 65], [450, 85], [375, 100]]);
+  }
 
-  // Ruck — pace (min/km), faster = higher
+  // Ruck — loaded pace min/km. 11:00 slow → 8:15 solid → 6:00 elite.
   let ruck = 0;
-  if (bl.ruckPaceMinKm) ruck = clamp(lin(bl.ruckPaceMinKm, 10, 6, 20, 100));
-
-  // Consistency — plan completion
-  let consistency = 0;
-  if (plan) {
-    const all = plan.weeks.flatMap(w => w.sessions).length;
-    const done = logs.filter(l => l.status === 'done').length;
-    consistency = all > 0 ? clamp((done / all) * 100) : 0;
+  if (bl.ruckPaceMinKm) {
+    ruck = piecewise(bl.ruckPaceMinKm, [[11, 10], [9.5, 40], [8.25, 65], [7, 85], [6, 100]]);
   }
 
   const axes = [
-    { key: 'strength', label: 'Strength', value: Math.round(strength) },
-    { key: 'power', label: 'Power', value: Math.round(power) },
-    { key: 'run', label: 'Run', value: Math.round(run) },
-    { key: 'swim', label: 'Swim', value: Math.round(swim) },
-    { key: 'ruck', label: 'Ruck', value: Math.round(ruck) },
-    { key: 'consistency', label: 'Consistency', value: Math.round(consistency) },
+    { key: 'strength', label: 'Strength', value: Math.round(clamp(strength)) },
+    { key: 'power', label: 'Power', value: Math.round(clamp(power)) },
+    { key: 'run', label: 'Run', value: Math.round(clamp(run)) },
+    { key: 'swim', label: 'Swim', value: Math.round(clamp(swim)) },
+    { key: 'ruck', label: 'Ruck', value: Math.round(clamp(ruck)) },
   ];
 
   const rated = axes.filter(a => a.value > 0);

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 const TABS = [
   { key: 'dashboard', label: 'Home',    icon: '🏠', path: '/dashboard' },
   { key: 'overview',  label: 'Plan',    icon: '📅', path: '/overview' },
-  { key: 'test',      label: 'Test',    icon: '🎯', path: '/test' },
+  { key: 'test',      label: 'Workout', icon: '💪', path: '/test' },
   { key: 'stats',     label: 'Stats',   icon: '📊', path: '/stats' },
   { key: 'settings',  label: 'Settings', icon: '⚙️', path: '/settings' },
 ];

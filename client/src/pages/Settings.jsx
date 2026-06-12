@@ -51,6 +51,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [baselines, setBaselines] = useState({ ...profile?.baselines });
+  const [liftMode, setLiftMode] = useState(profile?.rmMode || '8rm'); // '1rm' | '8rm'
   const [baselinesSaved, setBaselinesSaved] = useState(false);
   const [cardioSaved, setCardioSaved] = useState(false);
 
@@ -170,10 +171,25 @@ export default function Settings() {
           </button>
       </Collapsible>
 
-      {/* Editable baselines */}
-      <Collapsible title="Baselines (1RM)" subtitle="Squat · deadlift · bench · OHP · row">
+      {/* Editable baselines — values stored as 1RM, viewable/editable as 8RM too */}
+      <Collapsible title="Strength Baselines" subtitle="Squat · deadlift · bench · OHP · row">
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Edit anytime. Save &amp; Regenerate updates your plan with new weights.
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={`btn ${liftMode === '8rm' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ flex: 1, padding: '0.5rem 0' }} onClick={() => setLiftMode('8rm')}>
+              8RM
+            </button>
+            <button className={`btn ${liftMode === '1rm' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ flex: 1, padding: '0.5rem 0' }} onClick={() => setLiftMode('1rm')}>
+              1RM
+            </button>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            {liftMode === '8rm'
+              ? '8RM = most weight you can lift for exactly 8 reps (≈80% of 1RM).'
+              : '1RM = your absolute single-rep max.'}
           </div>
           {[
             { key: 'squat', label: 'Squat' },
@@ -181,20 +197,33 @@ export default function Settings() {
             { key: 'bench', label: 'Bench' },
             { key: 'ohp', label: 'OHP' },
             { key: 'row', label: 'Row' },
-          ].map(({ key, label }) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{label} 1RM</span>
-              <input
-                type="number" inputMode="numeric"
-                value={baselines[key] ?? ''}
-                onChange={e => setB(key, e.target.value)}
-                style={{ width: 80, textAlign: 'center', padding: '0.35rem 0.5rem', fontSize: '0.9rem' }}
-              />
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', width: 28 }}>{profile?.unit || 'kg'}</span>
-            </div>
-          ))}
+          ].map(({ key, label }) => {
+            const oneRM = Number(baselines[key]) || 0;
+            const shown = liftMode === '8rm' ? Math.round(oneRM * 0.8) : oneRM;
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  {label} {liftMode.toUpperCase()}
+                </span>
+                <input
+                  type="number" inputMode="numeric"
+                  value={shown || ''}
+                  onChange={e => {
+                    const v = Number(e.target.value) || 0;
+                    setB(key, liftMode === '8rm' ? v / 0.8 : v);
+                  }}
+                  style={{ width: 80, textAlign: 'center', padding: '0.35rem 0.5rem', fontSize: '0.9rem' }}
+                />
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', width: 28 }}>{profile?.unit || 'kg'}</span>
+              </div>
+            );
+          })}
           <button className="btn btn-primary" onClick={() => {
-            const updated = { ...profile, baselines: { ...profile.baselines, ...baselines } };
+            const lifts = ['squat', 'deadlift', 'bench', 'ohp', 'row'];
+            const merged = { ...profile.baselines, ...baselines };
+            // Keep the 8RM mirror keys in sync with the 1RM values
+            lifts.forEach(k => { merged[`${k}8rm`] = Math.round((Number(merged[k]) || 0) * 0.8); });
+            const updated = { ...profile, rmMode: liftMode, baselines: merged };
             storage.setProfile(updated);
             const newPlan = generatePlan(updated);
             storage.setPlan(newPlan);

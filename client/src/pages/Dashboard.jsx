@@ -8,6 +8,7 @@ import PixelCharacter from '../components/PixelCharacter';
 import BulletFX from '../components/BulletFX';
 import PromotionModal from '../components/PromotionModal';
 import MissedModal from '../components/MissedModal';
+import { normalizeRanking, DISC_EMOJI as FOCUS_EMOJI } from '../lib/focus';
 
 const DISC_EMOJI = { run: '🏃', swim: '🏊', ruck: '🎒', gym: '🏋️', test: '🎯' };
 const AVATAR_SIZE = 1.8; // shared by the avatar SVG and the speech-bubble follow offset
@@ -56,7 +57,7 @@ export default function Dashboard() {
   const profile = storage.getProfile();
   const [showWellness, setShowWellness] = useState(false);
   const [editWellness, setEditWellness] = useState(false);
-  const [char, setChar] = useState(charStore.get());
+  const [char] = useState(charStore.get());
   const [promo, setPromo] = useState(null);
   const [reschedule, setReschedule] = useState(false);
   const [, setRefresh] = useState(0);
@@ -83,7 +84,6 @@ export default function Dashboard() {
   const todaySessions = getTodaySessions(plan);
   const progress = getCurrentWeek(plan, logs);
   const today = new Date().toISOString().split('T')[0];
-  const levelPct = charStore.levelProgress(char) * 100;
 
   // Speech bubble — cycle through the mood's lines so the avatar feels alive.
   const mood = moodFor(todaySessions, logs);
@@ -193,6 +193,35 @@ export default function Dashboard() {
           onClick={() => navigate('/bunk')}
         />
       </div>
+
+      {/* Profile & focus priority — tap to edit in Settings */}
+      <button className="card" onClick={() => navigate('/settings')}
+        style={{ width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: '1rem', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+            Profile & Focus
+          </div>
+          <span style={{ fontSize: '0.72rem', color: 'var(--accent)' }}>Edit ✎</span>
+        </div>
+        <div style={{ display: 'flex', gap: 14, fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+          {profile?.bodyweight > 0 && <span>⚖️ {profile.bodyweight} {profile.unit}</span>}
+          {profile?.height > 0 && <span>📐 {profile.height} cm</span>}
+          {profile?.age > 0 && <span>🎂 {profile.age}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Priority:</span>
+          {normalizeRanking(profile?.focusRanking).map((d, i) => (
+            <span key={d} style={{
+              fontSize: '0.74rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+              background: i === 0 ? 'var(--accent)20' : 'var(--bg-elevated)',
+              border: `1px solid ${i === 0 ? 'var(--accent)55' : 'var(--border)'}`,
+              color: i === 0 ? 'var(--accent)' : 'var(--text-muted)',
+            }}>
+              {i + 1} {FOCUS_EMOJI[d]}
+            </span>
+          ))}
+        </div>
+      </button>
 
       {/* Recovery recommendation */}
       {lowRecovery && (
