@@ -249,7 +249,11 @@ export default function GymLogger({ workout, profile, onSave, adjust = true, com
           <div key={exIdx} className="card" style={{ position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: expandedEx === exIdx ? '0.75rem' : 0 }}>
               <div>
-                <div style={{ fontWeight: 700, marginBottom: 3 }}>{ex.name}</div>
+                <button onClick={() => setInfoName(ex.name)}
+                  style={{ fontWeight: 700, marginBottom: 3, padding: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {ex.name}
+                  <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 800 }}>ⓘ</span>
+                </button>
                 {kind === 'weighted' ? (
                   <button onClick={() => setPlateEx(exIdx)} style={{
                     fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 700,

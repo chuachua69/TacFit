@@ -138,12 +138,25 @@ export default function TestHub() {
                 <span className={`tag tag-${wod.discipline}`}>{wod.discipline}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {wod.items.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: '0.85rem' }}>
-                    <span style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '0.7rem' }}>{i + 1}</span>
-                    <span style={{ color: 'var(--text-dim)' }}>{item}</span>
-                  </div>
-                ))}
+                {wod.items.map((item, i) => {
+                  // Strip rep counts/loads so the YouTube search is just the movement
+                  const movement = item.split(' ').filter(w => !/\d/.test(w) && w !== '×').join(' ').trim();
+                  const linkable = wod.discipline === 'gym' && /^\d/.test(item) && movement.length > 2;
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '0.7rem' }}>{i + 1}</span>
+                      <span style={{ color: 'var(--text-dim)', flex: 1 }}>{item}</span>
+                      {linkable && (
+                        <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(movement + ' exercise form')}`}
+                          target="_blank" rel="noopener noreferrer"
+                          aria-label={`Watch ${movement} demo on YouTube`}
+                          style={{ fontSize: '0.72rem', color: 'var(--danger)', textDecoration: 'none', fontWeight: 800 }}>
+                          ▶
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {wodDone ? (
                 <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 700, fontSize: '0.9rem', padding: '0.4rem' }}>
