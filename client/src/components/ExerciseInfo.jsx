@@ -46,6 +46,15 @@ export default function ExerciseInfo({ name, onClose }) {
           ))}
         </div>
 
+        <a
+          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise form')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-secondary"
+          style={{ marginBottom: 10, textDecoration: 'none' }}
+        >
+          ▶ Watch on YouTube
+        </a>
         <button className="btn btn-primary" onClick={onClose}>Got it</button>
       </div>
     </div>

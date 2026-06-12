@@ -72,8 +72,66 @@ function countSessions(schedule) {
   return DAYS.reduce((n, d) => n + (schedule[d].am ? 1 : 0) + (schedule[d].pm ? 1 : 0), 0);
 }
 
+const INTRO = [
+  {
+    headline: 'Train like\nan operator.',
+    body: 'TacFit is a periodised training program built for real-world fitness — not beach prep.',
+    detail: null,
+    items: [
+      { emoji: '🏋️', label: 'Strength' },
+      { emoji: '🏃', label: 'Run' },
+      { emoji: '🏊', label: 'Swim' },
+      { emoji: '🎒', label: 'Ruck' },
+    ],
+    itemNote: 'Four disciplines. One program.',
+    cta: 'Continue',
+  },
+  {
+    headline: '6 weeks.\n4 disciplines.',
+    body: 'Auto-programmed blocks with progressive overload. Each cycle tapers into a test week so your scores actually move.',
+    detail: null,
+    items: [
+      { emoji: '📈', label: 'Build (Weeks 1–4)' },
+      { emoji: '⚡', label: 'Peak (Week 5)' },
+      { emoji: '🎯', label: 'Test (Week 6)' },
+    ],
+    itemNote: 'Not random WODs. A plan that knows where you\'re going.',
+    cta: 'Continue',
+  },
+  {
+    headline: 'Before\nyou start.',
+    body: 'You\'ll need access to the basics. No pool or track? Single-discipline modes let you focus on what you\'ve got.',
+    detail: null,
+    items: [
+      { emoji: '🏗️', label: 'Barbell + weight plates' },
+      { emoji: '🛣️', label: '2.4km run route or track' },
+      { emoji: '🏊', label: 'Pool (400m)' },
+      { emoji: '🎒', label: 'Weighted pack — 20kg+' },
+    ],
+    itemNote: null,
+    cta: 'Set Up My Plan →',
+  },
+];
+
+function IntroDots({ current }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: '2rem' }}>
+      {INTRO.map((_, i) => (
+        <div key={i} style={{
+          width: i === current ? 20 : 6, height: 6,
+          borderRadius: 999,
+          background: i <= current ? 'var(--accent)' : 'var(--border)',
+          transition: 'all 0.2s',
+        }} />
+      ))}
+    </div>
+  );
+}
+
 export default function Onboarding() {
   const navigate = useNavigate();
+  const [intro, setIntro] = useState(true);
+  const [introStep, setIntroStep] = useState(0);
   const [step, setStep] = useState(0);
   const [rmMode, setRmMode] = useState('8rm'); // '1rm' | '8rm'
   const [form, setForm] = useState({
@@ -86,7 +144,7 @@ export default function Onboarding() {
     sex: '',
     amTime: '07:00',
     pmTime: '18:00',
-    focus: 'balanced',
+    focus: 'operator',
     schedule: DEFAULT_SCHEDULE,
     baselines: {
       squat: '',
@@ -160,11 +218,54 @@ export default function Onboarding() {
   const barOptions = getBarOptions(form.unit);
   const sessionCount = countSessions(form.schedule);
 
+  if (intro) {
+    const screen = INTRO[introStep];
+    const isLast = introStep === INTRO.length - 1;
+    const advance = () => isLast ? setIntro(false) : setIntroStep(i => i + 1);
+    return (
+      <div className="screen" style={{ paddingTop: '2.5rem', paddingBottom: '2.5rem' }}>
+        <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--accent)', marginBottom: '2rem' }}>TACFIT</div>
+        <IntroDots current={introStep} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ fontSize: '2.2rem', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.03em' }}>
+            {screen.headline.split('\n').map((line, i) => (
+              <span key={i}>{line}{i < screen.headline.split('\n').length - 1 && <br />}</span>
+            ))}
+          </div>
+          <div style={{ fontSize: '1rem', color: 'var(--text-dim)', lineHeight: 1.6 }}>{screen.body}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+            {screen.items.map(item => (
+              <div key={item.label} style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)', padding: '0.75rem 1rem',
+              }}>
+                <span style={{ fontSize: '1.4rem' }}>{item.emoji}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+          {screen.itemNote && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{screen.itemNote}</div>
+          )}
+        </div>
+        <button className="btn btn-primary" style={{ marginTop: '2rem' }} onClick={advance}>
+          {screen.cta}
+        </button>
+        {introStep > 0 && (
+          <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setIntroStep(i => i - 1)}>
+            Back
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="screen" style={{ paddingTop: '2rem' }}>
       <div style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--accent)' }}>TACFIT</div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>Military Fitness Periodisation</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>Operator Fitness Program</div>
       </div>
 
       <StepDots current={step} />
