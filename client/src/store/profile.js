@@ -6,7 +6,8 @@ const KEYS = {
   PROFILE: 'tac5_profile',
   ATTEMPTS: 'tac5_attempts',   // full 5-event assessment attempts
   EVENTS: 'tac5_events',       // single-event test logs
-  WOD: 'tac5_wod',             // completed WOD sessions
+  WOD: 'tac5_wod',             // completed WOD sessions (detailed)
+  EXMEM: 'tac5_exmem',         // last-used weight per exercise name
 };
 
 export const DEFAULT_PROFILE = {
@@ -57,19 +58,43 @@ export const store = {
     return all;
   },
 
-  // Completed WOD sessions — keyed by logId so completion toggles are idempotent
+  // Completed WOD sessions — keyed by logId (idempotent upsert)
   getWodLogs() {
     return JSON.parse(localStorage.getItem(KEYS.WOD) || '[]');
+  },
+  getWodLog(logId) {
+    return store.getWodLogs().find(w => w.logId === logId) || null;
   },
   isWodDone(logId) {
     return store.getWodLogs().some(w => w.logId === logId);
   },
-  toggleWod(entry) {
+  saveWodSession(entry) {
     const all = store.getWodLogs();
     const idx = all.findIndex(w => w.logId === entry.logId);
-    if (idx >= 0) all.splice(idx, 1);
-    else all.push({ ...entry, id: Date.now(), date: new Date().toISOString() });
+    const record = { ...entry, id: entry.id || Date.now(), date: new Date().toISOString() };
+    if (idx >= 0) all[idx] = record;
+    else all.push(record);
     localStorage.setItem(KEYS.WOD, JSON.stringify(all));
     return all;
+  },
+  removeWod(logId) {
+    const all = store.getWodLogs().filter(w => w.logId !== logId);
+    localStorage.setItem(KEYS.WOD, JSON.stringify(all));
+    return all;
+  },
+  // Toggle a session done with no detail (run / rest / quick mark)
+  toggleWod(entry) {
+    if (store.isWodDone(entry.logId)) return store.removeWod(entry.logId);
+    return store.saveWodSession(entry);
+  },
+
+  // Per-exercise last-used weight memory (pre-fills the runner next time)
+  getExMemory() {
+    return JSON.parse(localStorage.getItem(KEYS.EXMEM) || '{}');
+  },
+  rememberWeights(map) {
+    const mem = { ...store.getExMemory(), ...map };
+    localStorage.setItem(KEYS.EXMEM, JSON.stringify(mem));
+    return mem;
   },
 };
