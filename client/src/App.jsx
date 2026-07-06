@@ -1,60 +1,25 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { storage } from './store/storage';
-import Onboarding from './pages/Onboarding';
-import Dashboard from './pages/Dashboard';
-import WeekView from './pages/WeekView';
-import SessionDetail from './pages/SessionDetail';
-import Overview from './pages/Overview';
+import Calculator from './pages/Calculator';
+import History from './pages/History';
 import Settings from './pages/Settings';
-import Assessment from './pages/Assessment';
-import Bunk from './pages/Bunk';
-import Stats from './pages/Stats';
-import Operator from './pages/Operator';
-import TestHub from './pages/TestHub';
-import Baseline from './pages/Baseline';
 import ReloadPrompt from './components/ReloadPrompt';
+import { store } from './store/profile';
+import { setMuted } from './lib/feedback';
 import './styles/global.css';
 
-function App() {
-  const profile = storage.getProfile();
-  const plan = storage.getPlan();
-  const hasSetup = profile && plan;
+// Apply saved mute preference on load
+setMuted(store.getProfile().muted);
 
-  // Check if plan is complete (all sessions done or past)
-  const isPlanComplete = hasSetup && (() => {
-    const allSessions = plan.weeks.flatMap(w => w.sessions);
-    const logs = storage.getLogs();
-    const today = new Date().toISOString().split('T')[0];
-    const lastSession = allSessions[allSessions.length - 1];
-    return lastSession && lastSession.date < today &&
-      logs.filter(l => l.status === 'done').length >= allSessions.length * 0.8;
-  })();
-
+export default function App() {
   return (
     <HashRouter>
       <ReloadPrompt />
       <Routes>
-        <Route path="/" element={
-          !hasSetup ? <Navigate to="/onboarding" replace /> :
-          isPlanComplete ? <Navigate to="/assessment" replace /> :
-          <Navigate to="/dashboard" replace />
-        } />
-        <Route path="/onboarding/*" element={<Onboarding />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/week/:weekNum" element={<WeekView />} />
-        <Route path="/session/:sessionId" element={<SessionDetail />} />
-        <Route path="/overview" element={<Overview />} />
+        <Route path="/" element={<Calculator />} />
+        <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/assessment" element={<Assessment />} />
-        <Route path="/bunk" element={<Bunk />} />
-        <Route path="/stats" element={<Stats />} />
-        <Route path="/test" element={<TestHub />} />
-        <Route path="/operator" element={<Operator />} />
-        <Route path="/baseline" element={<Baseline />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   );
 }
-
-export default App;

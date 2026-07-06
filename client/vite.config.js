@@ -21,7 +21,7 @@ export default defineConfig({
       manifest: {
         name: 'TacFit',
         short_name: 'TacFit',
-        description: 'Military fitness periodisation app',
+        description: '5-event tactical fitness assessment scorer',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
         display: 'standalone',
