@@ -3,7 +3,7 @@ import BottomNav from '../components/BottomNav';
 import SessionRunner from '../components/SessionRunner';
 import { PROGRAM, DAY_LABEL, todayKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
 import { store } from '../store/profile';
-import { fxCount } from '../lib/feedback';
+import { fxCount, fxUncount } from '../lib/feedback';
 
 const TYPE_BADGE = {
   lift: { label: 'Strength', color: 'var(--gym)' },
@@ -37,19 +37,28 @@ function SessionCard({ session, dayKey, onRun, onRefresh }) {
     </div>
   );
 
-  // Runnable session → whole card opens the workout runner
+  // Runnable session → clickable region opens the runner; done state gets an undo
   if (runnable) {
+    const undo = () => { store.removeWod(logId); fxUncount(); onRefresh(); };
     return (
-      <button className="card" onClick={() => onRun(session, dayKey)}
-        style={{ width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${done ? 'var(--success)45' : 'var(--border)'}` }}>
-        {header}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{session.exercises.length} exercises</span>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: done ? 'var(--success)' : 'var(--accent)' }}>
-            {done ? '✓ Logged — tap to edit' : 'Start ▶'}
-          </span>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${done ? 'var(--success)45' : 'var(--border)'}` }}>
+        <div role="button" tabIndex={0} onClick={() => onRun(session, dayKey)}
+          style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {header}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{session.exercises.length} exercises</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: done ? 'var(--success)' : 'var(--accent)' }}>
+              {done ? '✓ Logged — tap to edit' : 'Start ▶'}
+            </span>
+          </div>
         </div>
-      </button>
+        {done && (
+          <button onClick={undo}
+            style={{ alignSelf: 'flex-end', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: '0.3rem 0.8rem' }}>
+            ✕ Undo log
+          </button>
+        )}
+      </div>
     );
   }
 

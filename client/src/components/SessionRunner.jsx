@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import RestTimer from './RestTimer';
+import EmomTimer from './EmomTimer';
 import { parseScheme } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount } from '../lib/feedback';
@@ -36,6 +37,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
       : session.exercises.map(ex => initExercise(ex, profile, memory)),
   );
   const [resting, setResting] = useState(false);
+  const [emom, setEmom] = useState(false);
   const unit = profile.unit || 'kg';
 
   const update = (ei, si, field, val) => {
@@ -82,8 +84,11 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
         </div>
 
         {session.emom && (
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', background: 'var(--accent)12', border: '1px solid var(--accent)33', borderRadius: 'var(--radius)', padding: '0.6rem 0.85rem' }}>
-            ⏱ EMOM — start each movement on the minute; repeat the 5-min block ×{session.emom.rounds}.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', background: 'var(--accent)12', border: '1px solid var(--accent)33', borderRadius: 'var(--radius)', padding: '0.6rem 0.85rem' }}>
+              ⏱ EMOM — start each movement on the minute; repeat the 5-min block ×{session.emom.rounds}.
+            </div>
+            <button className="btn btn-primary" onClick={() => setEmom(true)}>▶ Run EMOM Timer</button>
           </div>
         )}
 
@@ -135,6 +140,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
         ))}
 
         {resting && <RestTimer start={90} onDismiss={() => setResting(false)} />}
+        {emom && <EmomTimer session={session} onClose={() => setEmom(false)} />}
       </div>
 
       {/* Sticky footer */}
