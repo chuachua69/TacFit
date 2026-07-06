@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 
 const TABS = [
-  { key: 'calculator', label: 'Blueprint', icon: '🎯', path: '/' },
-  { key: 'history',    label: 'History',   icon: '📈', path: '/history' },
-  { key: 'settings',   label: 'Settings',  icon: '⚙️', path: '/settings' },
+  { key: 'wod',      label: 'WOD',      icon: '💪', path: '/' },
+  { key: 'test',     label: 'Test',     icon: '🎯', path: '/test' },
+  { key: 'progress', label: 'Progress', icon: '📈', path: '/progress' },
+  { key: 'settings', label: 'Settings', icon: '⚙️', path: '/settings' },
 ];
 
 export default function BottomNav({ active }) {

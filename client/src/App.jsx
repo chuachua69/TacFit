@@ -1,6 +1,8 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Wod from './pages/Wod';
+import Test from './pages/Test';
 import Calculator from './pages/Calculator';
-import History from './pages/History';
+import Progress from './pages/Progress';
 import Settings from './pages/Settings';
 import ReloadPrompt from './components/ReloadPrompt';
 import { store } from './store/profile';
@@ -15,8 +17,10 @@ export default function App() {
     <HashRouter>
       <ReloadPrompt />
       <Routes>
-        <Route path="/" element={<Calculator />} />
-        <Route path="/history" element={<History />} />
+        <Route path="/" element={<Wod />} />
+        <Route path="/test" element={<Test />} />
+        <Route path="/assessment" element={<Calculator />} />
+        <Route path="/progress" element={<Progress />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

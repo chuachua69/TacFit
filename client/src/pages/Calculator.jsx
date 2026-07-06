@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import Stepper from '../components/Stepper';
 import TierBadge from '../components/TierBadge';
@@ -14,6 +15,7 @@ function loadLabel(event, profile) {
 }
 
 export default function Calculator() {
+  const navigate = useNavigate();
   const profile = store.getProfile();
   const [values, setValues] = useState(() => Object.fromEntries(EVENTS.map(e => [e.key, 0])));
   const [timerFor, setTimerFor] = useState(null);
@@ -37,9 +39,12 @@ export default function Calculator() {
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
       {/* Header */}
-      <div>
-        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>ASSESSMENT</div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>5-event score blueprint</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button className="btn btn-ghost" style={{ width: 'auto', padding: '0.4rem 0.7rem' }} onClick={() => navigate('/test')}>← Test</button>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>FULL ASSESSMENT</div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>5-event scored circuit</div>
+        </div>
       </div>
 
       {/* Sticky score summary */}
@@ -129,7 +134,7 @@ export default function Calculator() {
         />
       )}
 
-      <BottomNav active="calculator" />
+      <BottomNav active="test" />
     </div>
   );
 }
