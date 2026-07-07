@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
 import SessionRunner from '../components/SessionRunner';
-import { PROGRAM, DAY_LABEL, todayKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
+import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount, fxUncount } from '../lib/feedback';
 
@@ -13,8 +13,7 @@ const TYPE_BADGE = {
   rest: { label: 'Rest', color: 'var(--text-muted)' },
 };
 
-function SessionCard({ session, dayKey, onRun, onRefresh }) {
-  const date = dateForDayKey(dayKey);
+function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
   const logId = sessionLogId(date, dayKey, session.slot);
   const done = store.isWodDone(logId);
   const badge = TYPE_BADGE[session.type] || TYPE_BADGE.lift;
@@ -42,7 +41,7 @@ function SessionCard({ session, dayKey, onRun, onRefresh }) {
     const undo = () => { store.removeWod(logId); fxUncount(); onRefresh(); };
     return (
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${done ? 'var(--success)45' : 'var(--border)'}` }}>
-        <div role="button" tabIndex={0} onClick={() => onRun(session, dayKey)}
+        <div role="button" tabIndex={0} onClick={() => onRun(session, dayKey, date)}
           style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {header}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -90,18 +89,20 @@ function SessionCard({ session, dayKey, onRun, onRefresh }) {
   );
 }
 
+const isoOffset = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; };
+
 export default function Wod() {
   const tk = todayKey();
-  const [view, setView] = useState('today'); // 'today' | 'week'
-  const [running, setRunning] = useState(null); // { session, dayKey }
+  const tmk = tomorrowKey();
+  const [view, setView] = useState('today'); // 'today' | 'tomorrow' | 'week'
+  const [running, setRunning] = useState(null); // { session, dayKey, date }
   const [, setRefresh] = useState(0);
   const bump = () => setRefresh(r => r + 1);
 
-  const openRunner = (session, dayKey) => setRunning({ session, dayKey });
+  const openRunner = (session, dayKey, date) => setRunning({ session, dayKey, date });
 
   const completeSession = (result) => {
-    const { session, dayKey } = running;
-    const date = dateForDayKey(dayKey);
+    const { session, dayKey, date } = running;
     store.saveWodSession({
       logId: sessionLogId(date, dayKey, session.slot),
       day: dayKey, slot: session.slot, title: session.title, type: session.type,
@@ -113,29 +114,27 @@ export default function Wod() {
   };
 
   const profile = store.getProfile();
-  const todayDay = dayFor(tk);
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
-      {/* Clickable title toggles today ↔ week */}
-      <button onClick={() => setView(v => (v === 'today' ? 'week' : 'today'))}
-        style={{ textAlign: 'left', padding: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>WOD</span>
-        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-          {view === 'today' ? 'Today · tap for full week ›' : '‹ tap for today'}
-        </span>
-      </button>
-
-      {view === 'today' ? (
-        <>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>
-            {todayDay.label} · {todayDay.sessions.length} session{todayDay.sessions.length === 1 ? '' : 's'}
-          </div>
-          {todayDay.sessions.map(s => (
-            <SessionCard key={s.slot} session={s} dayKey={tk} onRun={openRunner} onRefresh={bump} />
+      {/* Title + Tdy / Tmr / Week toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>WOD</div>
+        <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: 3 }}>
+          {[['today', 'Tdy'], ['tomorrow', 'Tmr'], ['week', 'Week']].map(([v, label]) => (
+            <button key={v} onClick={() => setView(v)}
+              style={{
+                padding: '0.4rem 0.85rem', borderRadius: 999, fontSize: '0.8rem', fontWeight: 700,
+                background: view === v ? 'var(--accent)' : 'transparent',
+                color: view === v ? '#000' : 'var(--text-muted)',
+              }}>
+              {label}
+            </button>
           ))}
-        </>
-      ) : (
+        </div>
+      </div>
+
+      {view === 'week' ? (
         PROGRAM.map(d => (
           <div key={d.day} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -143,19 +142,33 @@ export default function Wod() {
               {d.day === tk && <span style={{ fontSize: '0.58rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent)' }}>today</span>}
             </div>
             {d.sessions.map(s => (
-              <SessionCard key={s.slot} session={s} dayKey={d.day} onRun={openRunner} onRefresh={bump} />
+              <SessionCard key={s.slot} session={s} dayKey={d.day} date={dateForDayKey(d.day)} onRun={openRunner} onRefresh={bump} />
             ))}
           </div>
         ))
-      )}
+      ) : (() => {
+        const dayKey = view === 'today' ? tk : tmk;
+        const date = view === 'today' ? isoOffset(0) : isoOffset(1);
+        const dayObj = dayFor(dayKey);
+        return (
+          <>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+              {view === 'tomorrow' ? 'Tomorrow · ' : ''}{dayObj.label} · {dayObj.sessions.length} session{dayObj.sessions.length === 1 ? '' : 's'}
+            </div>
+            {dayObj.sessions.map(s => (
+              <SessionCard key={s.slot} session={s} dayKey={dayKey} date={date} onRun={openRunner} onRefresh={bump} />
+            ))}
+          </>
+        );
+      })()}
 
       {running && (
         <SessionRunner
           session={running.session}
           dayLabel={DAY_LABEL[running.dayKey]}
-          logId={sessionLogId(dateForDayKey(running.dayKey), running.dayKey, running.session.slot)}
+          logId={sessionLogId(running.date, running.dayKey, running.session.slot)}
           profile={profile}
-          existing={store.getWodLog(sessionLogId(dateForDayKey(running.dayKey), running.dayKey, running.session.slot))}
+          existing={store.getWodLog(sessionLogId(running.date, running.dayKey, running.session.slot))}
           onClose={() => setRunning(null)}
           onComplete={completeSession}
         />

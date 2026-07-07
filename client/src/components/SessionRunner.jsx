@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import RestTimer from './RestTimer';
 import EmomTimer from './EmomTimer';
 import { parseScheme } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount } from '../lib/feedback';
+import { pushGuard } from '../lib/guard';
 
 const round = (v) => Math.round(v / 2.5) * 2.5;
 
@@ -39,6 +40,8 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
   const [resting, setResting] = useState(false);
   const [emom, setEmom] = useState(false);
   const unit = profile.unit || 'kg';
+
+  useEffect(() => pushGuard(), []); // warn on refresh/back while logging
 
   const update = (ei, si, field, val) => {
     setExercises(prev => prev.map((ex, i) => i !== ei ? ex : {

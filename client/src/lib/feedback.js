@@ -76,6 +76,32 @@ export function fxTimerDone() {
   vibrate([90, 60, 180]);
 }
 
+// ── Looping alarm — a loud, insistent bell that rings until stopAlarm() ──
+let alarmTimer = null;
+
+/** Ring one loud two-tone bell strike. */
+function bellStrike() {
+  // Bright, loud bell (respects mute). Two partials for a bell-like timbre.
+  beep(988, 0.55, 0.32, 'triangle');
+  beep(1318.5, 0.55, 0.22, 'sine', 0.02);
+  beep(659.3, 0.6, 0.18, 'sine', 0.02);
+}
+
+/** Start a constant loud bell + repeating vibration. Idempotent. */
+export function startAlarm() {
+  if (alarmTimer) return;
+  unlockAudio();
+  bellStrike();
+  vibrate([400, 200, 400, 200, 400]);
+  alarmTimer = setInterval(() => { bellStrike(); vibrate([400, 200]); }, 850);
+}
+
+/** Stop the looping alarm (call when the user dismisses the timer). */
+export function stopAlarm() {
+  if (alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+  try { if (navigator.vibrate) navigator.vibrate(0); } catch { /* no-op */ }
+}
+
 /** Round transition (work↔rest) — single mid tone + tap. */
 export function fxPhaseChange(work) {
   beep(work ? 988 : 587, 0.16, 0.12, 'sine');

@@ -138,6 +138,13 @@ export function todayKey(d = new Date()) {
   return DAY_ORDER[(d.getDay() + 6) % 7]; // JS: 0=Sun → shift so Mon=0
 }
 
+/** Tomorrow's weekday key. */
+export function tomorrowKey() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return todayKey(d);
+}
+
 export function dayFor(key) {
   return PROGRAM.find(d => d.day === key) || null;
 }

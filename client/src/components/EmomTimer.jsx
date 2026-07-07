@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { fxCountdownTick, fxTimerDone, fxPhaseChange, unlockAudio } from '../lib/feedback';
+import { fxCountdownTick, startAlarm, stopAlarm, fxPhaseChange, unlockAudio } from '../lib/feedback';
+import { pushGuard } from '../lib/guard';
 
 /**
  * EMOM (Every Minute On the Minute) runner. Flattens the session's minute
@@ -35,7 +36,7 @@ export default function EmomTimer({ session, onClose }) {
 
   const advance = useCallback(() => {
     if (idxRef.current >= phases.length - 1) {
-      stop(); setRunning(false); setFinished(true); fxTimerDone(); return;
+      stop(); setRunning(false); setFinished(true); startAlarm(); return;
     }
     idxRef.current += 1;
     const next = phases[idxRef.current];
@@ -61,7 +62,9 @@ export default function EmomTimer({ session, onClose }) {
     else { startTick(); setRunning(true); }
   };
 
-  useEffect(() => () => stop(), [stop]);
+  useEffect(() => () => { stop(); stopAlarm(); }, [stop]);
+  useEffect(() => pushGuard(), []);
+  const close = () => { stopAlarm(); onClose(); };
 
   const phase = phases[idx];
   const mins = Math.floor(remaining / 60), secs = remaining % 60;
@@ -79,7 +82,7 @@ export default function EmomTimer({ session, onClose }) {
             {finished ? 'Complete' : `EMOM · Round ${phase.round}/${rounds}`}
           </div>
         </div>
-        <button onClick={onClose} aria-label="Close" style={{ fontSize: '1.5rem', color: 'var(--text-muted)', lineHeight: 1, padding: '0 0.25rem' }}>✕</button>
+        <button onClick={close} aria-label="Close" style={{ fontSize: '1.5rem', color: 'var(--text-muted)', lineHeight: 1, padding: '0 0.25rem' }}>✕</button>
       </div>
 
       {/* Ring */}
@@ -140,7 +143,7 @@ export default function EmomTimer({ session, onClose }) {
             {running ? '⏸' : '▶'}
           </button>
         )}
-        <button className="btn btn-primary" style={{ flex: 1 }} onClick={onClose}>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={close}>
           {finished ? 'Done ✓' : 'Close'}
         </button>
       </div>

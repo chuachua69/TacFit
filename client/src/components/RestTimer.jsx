@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { fxCountdownTick, fxTimerDone, unlockAudio } from '../lib/feedback';
+import { fxCountdownTick, startAlarm, stopAlarm, unlockAudio } from '../lib/feedback';
 
 const PRESETS = [60, 90, 120, 180];
 
@@ -20,16 +20,17 @@ export default function RestTimer({ start = 90, onDismiss }) {
       if (remRef.current <= 0) {
         clearInterval(intervalRef.current);
         setRunning(false);
-        fxTimerDone();
+        startAlarm();
       } else if (remRef.current <= 3) {
         fxCountdownTick();
       }
     }, 1000);
   }, []);
 
-  useEffect(() => { unlockAudio(); run(start); return () => clearInterval(intervalRef.current); }, [run, start]);
+  useEffect(() => { unlockAudio(); run(start); return () => { clearInterval(intervalRef.current); stopAlarm(); }; }, [run, start]);
 
-  const reset = (s) => { setSeconds(s); setRemaining(s); setRunning(true); run(s); };
+  const reset = (s) => { stopAlarm(); setSeconds(s); setRemaining(s); setRunning(true); run(s); };
+  const dismiss = () => { stopAlarm(); onDismiss(); };
   const toggle = () => {
     if (running) { clearInterval(intervalRef.current); setRunning(false); }
     else { run(remaining); setRunning(true); }
@@ -68,7 +69,7 @@ export default function RestTimer({ start = 90, onDismiss }) {
             ))}
           </div>
         </div>
-        <button className="btn btn-primary" onClick={onDismiss}>{done ? 'Next Set ✓' : 'Skip Rest'}</button>
+        <button className="btn btn-primary" onClick={dismiss}>{done ? 'Stop Alarm ✓' : 'Skip Rest'}</button>
       </div>
     </div>
   );

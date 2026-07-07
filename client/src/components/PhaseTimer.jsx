@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { fxCount, fxCountdownTick, fxTimerDone, fxPhaseChange, fxAchievement, unlockAudio } from '../lib/feedback';
+import { fxCount, fxCountdownTick, startAlarm, stopAlarm, fxPhaseChange, fxAchievement, unlockAudio } from '../lib/feedback';
+import { pushGuard } from '../lib/guard';
 
 /**
  * Full-screen interactive event timer with a large tally button.
@@ -33,7 +34,7 @@ export default function PhaseTimer({ event, phases, initialCount = 0, baseline, 
       stop();
       setRunning(false);
       setFinished(true);
-      fxTimerDone();
+      startAlarm();
       return;
     }
     idxRef.current += 1;
@@ -74,7 +75,10 @@ export default function PhaseTimer({ event, phases, initialCount = 0, baseline, 
     });
   };
 
-  useEffect(() => () => stop(), [stop]);
+  useEffect(() => () => { stop(); stopAlarm(); }, [stop]);
+  useEffect(() => pushGuard(), []);
+  const close = () => { stopAlarm(); onClose(); };
+  const done = () => { stopAlarm(); onDone(count); };
 
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
@@ -92,7 +96,7 @@ export default function PhaseTimer({ event, phases, initialCount = 0, baseline, 
           <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{event.name}</div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{roundLabel}</div>
         </div>
-        <button onClick={() => onClose()} aria-label="Close"
+        <button onClick={close} aria-label="Close"
           style={{ fontSize: '1.5rem', color: 'var(--text-muted)', padding: '0 0.25rem', lineHeight: 1 }}>✕</button>
       </div>
 
@@ -151,7 +155,7 @@ export default function PhaseTimer({ event, phases, initialCount = 0, baseline, 
       {/* Footer actions */}
       <div style={{ display: 'flex', gap: 8, padding: '0 1.25rem calc(1.25rem + env(safe-area-inset-bottom))' }}>
         <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setCount(c => Math.max(0, c - 1))}>− Undo</button>
-        <button className="btn btn-primary" style={{ flex: 2 }} onClick={() => onDone(count)}>
+        <button className="btn btn-primary" style={{ flex: 2 }} onClick={done}>
           {finished ? 'Save Result ✓' : 'Save & Close'}
         </button>
       </div>
