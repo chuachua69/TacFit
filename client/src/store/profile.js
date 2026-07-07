@@ -65,27 +65,33 @@ export const store = {
   getWodLog(logId) {
     return store.getWodLogs().find(w => w.logId === logId) || null;
   },
+  // 'done' | 'skipped' | null. Legacy logs (no status) count as done.
+  getWodStatus(logId) {
+    const w = store.getWodLog(logId);
+    return w ? (w.status || 'done') : null;
+  },
   isWodDone(logId) {
-    return store.getWodLogs().some(w => w.logId === logId);
+    return store.getWodStatus(logId) === 'done';
+  },
+  isWodSkipped(logId) {
+    return store.getWodStatus(logId) === 'skipped';
   },
   saveWodSession(entry) {
     const all = store.getWodLogs();
     const idx = all.findIndex(w => w.logId === entry.logId);
-    const record = { ...entry, id: entry.id || Date.now(), date: new Date().toISOString() };
+    const record = { status: 'done', ...entry, id: entry.id || Date.now(), date: new Date().toISOString() };
     if (idx >= 0) all[idx] = record;
     else all.push(record);
     localStorage.setItem(KEYS.WOD, JSON.stringify(all));
     return all;
   },
+  skipWod(entry) {
+    return store.saveWodSession({ ...entry, status: 'skipped' });
+  },
   removeWod(logId) {
     const all = store.getWodLogs().filter(w => w.logId !== logId);
     localStorage.setItem(KEYS.WOD, JSON.stringify(all));
     return all;
-  },
-  // Toggle a session done with no detail (run / rest / quick mark)
-  toggleWod(entry) {
-    if (store.isWodDone(entry.logId)) return store.removeWod(entry.logId);
-    return store.saveWodSession(entry);
   },
 
   // Per-exercise last-used weight memory (pre-fills the runner next time)

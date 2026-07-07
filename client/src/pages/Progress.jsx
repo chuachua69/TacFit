@@ -6,6 +6,32 @@ import { EVENTS, TIERS } from '../lib/scoring';
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
+const TYPE_LABEL = { lift: 'Strength', conditioning: 'Conditioning', run: 'Run', mobility: 'Mobility' };
+
+// What skipping each session type costs, and how to make it up.
+const SKIP_INFO = {
+  lift: {
+    area: 'Strength',
+    impact: 'Bench-press and pull-up numbers stall when strength days are missed — those two events lean directly on max strength.',
+    remedy: 'Make up a Heavy Push/Pull or Lower-Body session before test day.',
+  },
+  conditioning: {
+    area: 'Work capacity',
+    impact: 'Shuttle speed-endurance and the EMOM circuit (Event 5 + the full test) fade fastest — conditioning is use-it-or-lose-it.',
+    remedy: 'Slot in a loaded-shuttle or EMOM session this week.',
+  },
+  run: {
+    area: 'Aerobic base',
+    impact: 'Your aerobic engine drives recovery between events; missed runs show up as fading in the later rounds.',
+    remedy: 'Get an easy Zone 2 run in on a rest day.',
+  },
+  mobility: {
+    area: 'Recovery',
+    impact: 'Skipping mobility builds stiffness and injury risk, quietly capping how hard your key sessions can go.',
+    remedy: 'A 10-minute mobility flow is enough to stay ahead.',
+  },
+};
+
 export default function Progress() {
   const [attempts, setAttempts] = useState(() => store.getAttempts().slice().reverse());
   const [eventLogs, setEventLogs] = useState(() => store.getEventLogs());
@@ -24,7 +50,15 @@ export default function Progress() {
     eventBest[ev.key] = Math.max(eventBest[ev.key] || 0, v);
   }));
 
-  const wodCount = wodLogs.length;
+  // WOD completion vs skips
+  const completedWod = wodLogs.filter(w => (w.status || 'done') === 'done');
+  const skippedWod = wodLogs.filter(w => w.status === 'skipped');
+  const skipByType = {};
+  skippedWod.forEach(w => { skipByType[w.type] = (skipByType[w.type] || 0) + 1; });
+  const dominantType = Object.entries(skipByType).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const totalLogged = completedWod.length + skippedWod.length;
+  const skipRate = totalLogged ? skippedWod.length / totalLogged : 0;
+  const skipInfo = SKIP_INFO[dominantType] || SKIP_INFO.lift;
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
@@ -72,17 +106,59 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* WOD activity */}
+      {/* WOD activity — completed vs skipped */}
       <div>
         <div className="label">Training</div>
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent)' }}>{wodCount}</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-            WOD session{wodCount === 1 ? '' : 's'} completed
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Mark sessions done on the WOD tab</div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--success)', lineHeight: 1 }}>{completedWod.length}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>completed</div>
           </div>
+          <div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: skippedWod.length ? 'var(--warn)' : 'var(--text-muted)', lineHeight: 1 }}>{skippedWod.length}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>skipped</div>
+          </div>
+          {totalLogged > 0 && (
+            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: skipRate > 0.3 ? 'var(--warn)' : 'var(--success)' }}>
+                {Math.round((1 - skipRate) * 100)}%
+              </div>
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>consistency</div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Skip analysis — impact + remedy */}
+      {skippedWod.length > 0 && (
+        <div className="card" style={{ border: '1px solid var(--warn)55', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ fontWeight: 800, color: 'var(--warn)' }}>⚠️ {skippedWod.length} session{skippedWod.length === 1 ? '' : 's'} skipped</span>
+            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--warn)' }}>mostly {skipInfo.area}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {Object.entries(skipByType).sort((a, b) => b[1] - a[1]).map(([t, n]) => (
+              <span key={t} style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'var(--bg-elevated)', color: 'var(--text-dim)', border: '1px solid var(--border)' }}>
+                {TYPE_LABEL[t] || t} · {n}
+              </span>
+            ))}
+          </div>
+
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+            <span style={{ color: 'var(--warn)', fontWeight: 700 }}>Impact — </span>{skipInfo.impact}
+          </div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+            <span style={{ color: 'var(--success)', fontWeight: 700 }}>Remedy — </span>{skipInfo.remedy}
+          </div>
+
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: skipRate > 0.3 ? 'var(--warn)' : 'var(--text-muted)', background: 'var(--bg-elevated)', borderRadius: 8, padding: '0.6rem 0.85rem' }}>
+            {skipRate > 0.3
+              ? `You're missing ${Math.round(skipRate * 100)}% of sessions — do more: add 1–2 make-up sessions this week, or trim the optional PM slots so the plan stays realistic.`
+              : 'A few misses is fine — just make up the key strength & conditioning days before test week.'}
+          </div>
+        </div>
+      )}
 
       {/* Assessment attempt history */}
       <div>

@@ -15,9 +15,18 @@ const TYPE_BADGE = {
 
 function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
   const logId = sessionLogId(date, dayKey, session.slot);
-  const done = store.isWodDone(logId);
+  const status = store.getWodStatus(logId); // 'done' | 'skipped' | null
+  const done = status === 'done';
+  const skipped = status === 'skipped';
   const badge = TYPE_BADGE[session.type] || TYPE_BADGE.lift;
   const runnable = session.exercises && session.exercises.length > 0;
+
+  const entry = { logId, day: dayKey, slot: session.slot, title: session.title, type: session.type, dayLabel: DAY_LABEL[dayKey] };
+  const skip = () => { store.skipWod(entry); fxUncount(); onRefresh(); };
+  const undo = () => { store.removeWod(logId); fxUncount(); onRefresh(); };
+  const markDone = () => { store.saveWodSession(entry); fxCount(); onRefresh(); };
+
+  const borderColor = done ? 'var(--success)45' : skipped ? 'var(--warn)55' : 'var(--border)';
 
   const slotTag = <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
     {session.slot === 'am' ? '🌅 AM' : '🌙 PM'}{session.optional ? ' · optional' : ''}
@@ -36,43 +45,55 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
     </div>
   );
 
-  // Runnable session → clickable region opens the runner; done state gets an undo
+  // Small pill button used for Skip / Undo actions
+  const pill = (label, onClick, color = 'var(--text-muted)') => (
+    <button onClick={onClick}
+      style={{ fontSize: '0.72rem', fontWeight: 700, color, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: '0.3rem 0.8rem' }}>
+      {label}
+    </button>
+  );
+
+  // Runnable session → clickable region opens the runner
   if (runnable) {
-    const undo = () => { store.removeWod(logId); fxUncount(); onRefresh(); };
     return (
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${done ? 'var(--success)45' : 'var(--border)'}` }}>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${borderColor}` }}>
         <div role="button" tabIndex={0} onClick={() => onRun(session, dayKey, date)}
           style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {header}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{session.exercises.length} exercises</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: done ? 'var(--success)' : 'var(--accent)' }}>
-              {done ? '✓ Logged — tap to edit' : 'Start ▶'}
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: done ? 'var(--success)' : skipped ? 'var(--warn)' : 'var(--accent)' }}>
+              {done ? '✓ Logged — tap to edit' : skipped ? '⤫ Skipped — tap to do it' : 'Start ▶'}
             </span>
           </div>
         </div>
-        {done && (
-          <button onClick={undo}
-            style={{ alignSelf: 'flex-end', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: '0.3rem 0.8rem' }}>
-            ✕ Undo log
-          </button>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          {!done && !skipped && pill('Skip session', skip, 'var(--warn)')}
+          {done && pill('✕ Undo log', undo)}
+          {skipped && pill('✕ Undo skip', undo)}
+        </div>
       </div>
     );
   }
 
-  // Run session → follow-own-programme + mark done
+  // Run session → follow-own-programme + mark done / skip
   if (session.type === 'run') {
     return (
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${done ? 'var(--success)45' : 'var(--border)'}` }}>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${borderColor}` }}>
         {header}
         <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', background: 'var(--bg-elevated)', borderRadius: 8, padding: '0.6rem 0.85rem' }}>
           🏃 Follow your own run programme
         </div>
-        <button className={`btn ${done ? 'btn-secondary' : 'btn-primary'}`}
-          onClick={() => { store.toggleWod({ logId, day: dayKey, slot: session.slot, title: session.title, type: 'run', dayLabel: DAY_LABEL[dayKey] }); fxCount(); onRefresh(); }}>
-          {done ? '✓ Done — tap to undo' : 'Mark Done'}
-        </button>
+        {done ? (
+          <button className="btn btn-secondary" onClick={undo}>✓ Done — tap to undo</button>
+        ) : skipped ? (
+          <button className="btn btn-secondary" style={{ color: 'var(--warn)' }} onClick={undo}>⤫ Skipped — tap to undo</button>
+        ) : (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary" style={{ flex: 2 }} onClick={markDone}>Mark Done</button>
+            <button className="btn btn-secondary" style={{ flex: 1, color: 'var(--warn)' }} onClick={skip}>Skip</button>
+          </div>
+        )}
       </div>
     );
   }
