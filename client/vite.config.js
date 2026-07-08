@@ -7,7 +7,9 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 const buildTime = new Date().toISOString().slice(0, 16).replace('T', ' ')
 
 export default defineConfig({
-  base: '/TacFit/',
+  // GitHub Pages serves under /TacFit/; Vercel serves at the domain root.
+  // Vercel sets VERCEL=1 at build time, so pick the right base automatically.
+  base: process.env.VERCEL ? '/' : '/TacFit/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(buildTime),

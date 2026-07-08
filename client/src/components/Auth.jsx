@@ -10,7 +10,9 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        // Include the app's base path (/TacFit/ on GitHub Pages, / on Vercel)
+        // so OAuth returns to where the app actually lives, not the bare domain root.
+        redirectTo: window.location.origin + import.meta.env.BASE_URL
       }
     });
     if (error) console.error('Error logging in:', error.message);
