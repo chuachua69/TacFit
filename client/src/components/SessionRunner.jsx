@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import RestTimer from './RestTimer';
 import EmomTimer from './EmomTimer';
+import ActiveSetTimer from './ActiveSetTimer';
 import { parseScheme } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount } from '../lib/feedback';
@@ -50,6 +51,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
   );
   const [resting, setResting] = useState(false);
   const [activeTimer, setActiveTimer] = useState(null); // { name, seconds }
+  const [activeSetTimer, setActiveSetTimer] = useState(null); // { ei, si, name, duration, isMaxTime }
   const [editingIdx, setEditingIdx] = useState(null); // index of exercise being swapped/edited
   const [emom, setEmom] = useState(false);
   const unit = profile.unit || 'kg';
@@ -211,26 +213,47 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
               )}
 
               {/* Set rows */}
-              {ex.rows.map((row, si) => (
-                <div key={si} style={{
-                  display: 'grid',
-                  gridTemplateColumns: ex.kind === 'check' ? '28px 1fr 40px' : ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px',
-                  gap: 8, alignItems: 'center', opacity: row.done ? 0.55 : 1,
-                }}>
-                  <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{si + 1}</span>
-                  {ex.kind === 'check' && <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>{ex.scheme}</span>}
-                  {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
-                  {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
-                  {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
-                  <button onClick={() => toggleDone(ei, si)} aria-label="toggle set done"
-                    style={{
-                      width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
-                      background: row.done ? 'var(--success)' : 'var(--bg-elevated)',
-                      color: row.done ? '#000' : 'var(--text-muted)',
-                      border: `1px solid ${row.done ? 'var(--success)' : 'var(--border)'}`,
-                    }}>✓</button>
-                </div>
-              ))}
+              {ex.rows.map((row, si) => {
+                const isMaxTime = /max\s*time/i.test(ex.scheme) || /max\s*time/i.test(ex.name);
+                return (
+                  <div key={si} style={{
+                    display: 'grid',
+                    gridTemplateColumns: ex.kind === 'check' ? '28px 1fr 40px' : ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px',
+                    gap: 8, alignItems: 'center', opacity: row.done ? 0.55 : 1,
+                  }}>
+                    <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{si + 1}</span>
+                    {ex.kind === 'check' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', width: '100%' }}>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: row.timeLogged ? 700 : 400 }}>
+                          {row.timeLogged ? `⏱ Completed (${row.timeLogged}s)` : ex.scheme}
+                        </span>
+                        {duration !== null && !row.done && (
+                          <button
+                            onClick={() => setActiveSetTimer({ ei, si, name: ex.name, duration, isMaxTime })}
+                            style={{
+                              fontSize: '0.72rem', padding: '3px 8px', borderRadius: 6,
+                              background: 'var(--accent)20', border: '1px solid var(--accent)50',
+                              color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', flexShrink: 0
+                            }}
+                          >
+                            ⏱ Timer
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
+                    {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
+                    {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
+                    <button onClick={() => toggleDone(ei, si)} aria-label="toggle set done"
+                      style={{
+                        width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
+                        background: row.done ? 'var(--success)' : 'var(--bg-elevated)',
+                        color: row.done ? '#000' : 'var(--text-muted)',
+                        border: `1px solid ${row.done ? 'var(--success)' : 'var(--border)'}`,
+                      }}>✓</button>
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -242,6 +265,23 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
             title={activeTimer.name}
             showPresets={false}
             onDismiss={() => setActiveTimer(null)}
+          />
+        )}
+        {activeSetTimer && (
+          <ActiveSetTimer
+            name={activeSetTimer.name}
+            duration={activeSetTimer.duration}
+            isMaxTime={activeSetTimer.isMaxTime}
+            onClose={() => setActiveSetTimer(null)}
+            onDone={(val) => {
+              setExercises(prev => prev.map((ex, i) => i !== activeSetTimer.ei ? ex : {
+                ...ex,
+                rows: ex.rows.map((r, j) => j !== activeSetTimer.si ? r : { ...r, done: true, timeLogged: val })
+              }));
+              setActiveSetTimer(null);
+              fxCount();
+              setResting(true);
+            }}
           />
         )}
         {emom && <EmomTimer session={session} onClose={() => setEmom(false)} />}
