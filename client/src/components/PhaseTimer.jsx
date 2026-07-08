@@ -132,24 +132,55 @@ export default function PhaseTimer({ event, phases, initialCount = 0, baseline, 
 
       {/* Big tally button */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1rem 1.25rem', gap: '1rem' }}>
-        <button onClick={tally} disabled={!isWork || finished}
+        <div onClick={tally}
           style={{
             width: '100%', aspectRatio: '1.6', borderRadius: 24,
             background: isWork && !finished ? 'var(--accent)' : 'var(--bg-elevated)',
-            color: isWork && !finished ? '#000' : 'var(--text-muted)',
+            color: isWork && !finished ? '#000' : 'var(--text-dim)',
             border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-            opacity: isWork || finished ? 1 : 0.6, transition: 'transform 0.05s',
+            opacity: isWork || finished ? 1 : 0.6,
+            cursor: isWork && !finished ? 'pointer' : 'default',
+            userSelect: 'none',
           }}>
-          <span style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {finished ? `${event.unit} logged` : isWork ? `tap to add ${event.unit.replace(/s$/, '')}` : 'rest'}
+          
+          <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <input
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={count}
+              onChange={e => {
+                const val = Math.max(0, parseInt(e.target.value) || 0);
+                setCount(val);
+              }}
+              onFocus={e => e.target.select()}
+              disabled={!isWork || finished}
+              style={{
+                width: 140,
+                height: 80,
+                fontSize: '4.2rem',
+                fontWeight: 900,
+                textAlign: 'center',
+                background: isWork && !finished ? 'rgba(0,0,0,0.08)' : 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                color: isWork && !finished ? '#000' : 'var(--text)',
+                padding: 0,
+                outline: 'none',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            />
+          </div>
+
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 4 }}>
+            {finished ? `${event.unit} logged` : isWork ? `tap card to add · or type value` : 'rest'}
           </span>
           {baseline != null && (
             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: isWork && !finished ? '#00000099' : 'var(--text-muted)' }}>
               {count >= baseline ? `+${count - baseline} over baseline` : `${baseline - count} to baseline (${baseline})`}
             </span>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Footer actions */}

@@ -32,13 +32,31 @@ export default function Stepper({ value, onChange, step = 1, baseline, big = fal
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: big ? 16 : 10, justifyContent: 'center' }}>
       {btn('−', -step, 'decrease')}
-      <div style={{
-        minWidth: big ? 96 : 64, textAlign: 'center',
-        fontSize: big ? '3.2rem' : '1.9rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-        color: baseline != null && value >= baseline ? 'var(--accent)' : 'var(--text)',
-      }}>
-        {value}
-      </div>
+      <input
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={value}
+        onChange={e => {
+          const val = Math.max(0, parseInt(e.target.value) || 0);
+          set(val);
+        }}
+        onFocus={e => e.target.select()}
+        style={{
+          minWidth: big ? 96 : 64,
+          width: big ? 110 : 80,
+          textAlign: 'center',
+          fontSize: big ? '2.8rem' : '1.8rem',
+          fontWeight: 800,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          color: baseline != null && value >= baseline ? 'var(--accent)' : 'var(--text)',
+          padding: '0.2rem 0',
+          outline: 'none',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      />
       {btn('+', step, 'increase')}
     </div>
   );

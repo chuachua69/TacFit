@@ -65,7 +65,7 @@ export default function Settings() {
         </div>
         {account && (
           <button className="btn btn-secondary" onClick={signOut}
-            style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', flexShrink: 0 }}>
+            style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', flexShrink: 0, width: 'auto' }}>
             Sign out
           </button>
         )}
