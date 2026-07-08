@@ -42,42 +42,39 @@ export default function Progress() {
   const removeAttempt = (id) => { store.removeAttempt(id); setAttempts(store.getAttempts().slice().reverse()); };
   const removeEvent = (id) => { store.removeEventLog(id); setEventLogs(store.getEventLogs()); };
 
-  // Parse WOD logs to extract exercise history
+  // Parse WOD logs to extract exercise progress records
   const profile = store.getProfile();
-  const exerciseHistory = {};
+  const exerciseProgress = {};
   wodLogs.forEach(w => {
     if (w.status !== 'done' && w.status !== undefined) return;
-    const dateStr = fmtDate(w.date || w.id);
     w.exercises?.forEach(ex => {
       const doneSets = ex.rows?.filter(r => r.done) || [];
       if (doneSets.length === 0) return;
       
-      if (!exerciseHistory[ex.name]) {
-        exerciseHistory[ex.name] = [];
+      if (!exerciseProgress[ex.name]) {
+        exerciseProgress[ex.name] = {
+          name: ex.name,
+          maxWeight: 0,
+          maxReps: 0,
+          maxTime: 0,
+          totalLogs: 0
+        };
       }
       
-      const setDetails = doneSets.map((r, idx) => {
-        if (ex.kind === 'check') return `Set ${idx + 1}: Done`;
-        const parts = [];
-        if (r.weight != null) parts.push(`${r.weight}${profile.unit || 'kg'}`);
-        if (r.reps != null && r.reps !== 'max') parts.push(`${r.reps} reps`);
-        else if (r.reps === 'max') parts.push('max reps');
-        if (r.rpe != null) parts.push(`@RPE ${r.rpe}`);
-        return `Set ${idx + 1}: ${parts.join(' × ') || 'Done'}`;
-      });
-
-      exerciseHistory[ex.name].push({
-        date: dateStr,
-        timestamp: new Date(w.date || w.id).getTime(),
-        sets: setDetails
+      exerciseProgress[ex.name].totalLogs += 1;
+      
+      doneSets.forEach(r => {
+        if (r.weight != null) {
+          exerciseProgress[ex.name].maxWeight = Math.max(exerciseProgress[ex.name].maxWeight, Number(r.weight) || 0);
+        }
+        if (r.reps != null && r.reps !== 'max') {
+          exerciseProgress[ex.name].maxReps = Math.max(exerciseProgress[ex.name].maxReps, Number(r.reps) || 0);
+        }
+        if (r.timeLogged != null) {
+          exerciseProgress[ex.name].maxTime = Math.max(exerciseProgress[ex.name].maxTime, Number(r.timeLogged) || 0);
+        }
       });
     });
-  });
-
-  // Sort each exercise history by date descending
-  Object.keys(exerciseHistory).forEach(name => {
-    const history = exerciseHistory[name];
-    history.sort((a, b) => b.timestamp - a.timestamp);
   });
 
   const bestAttempt = attempts.reduce((m, a) => (a.allMet && a.totalBonus > (m?.totalBonus ?? -1) ? a : m), null);
@@ -230,38 +227,54 @@ export default function Progress() {
         </div>
       )}
 
-      {/* Exercise History & Progress Accordion */}
+      {/* Exercise Progress Accordion */}
       <div>
-        <div className="label">Exercise History & Progress</div>
+        <div className="label">Exercise Progress (Personal Bests)</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {Object.keys(exerciseHistory).length === 0 ? (
+          {Object.keys(exerciseProgress).length === 0 ? (
             <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem', fontSize: '0.85rem' }}>
-              No exercise history logged yet. Complete workouts in the WOD tab to track your progress here.
+              No exercise progress logged yet. Complete workouts in the WOD tab to track your progress here.
             </div>
           ) : (
-            Object.entries(exerciseHistory).sort((a, b) => a[0].localeCompare(b[0])).map(([name, history]) => {
+            Object.entries(exerciseProgress).sort((a, b) => a[0].localeCompare(b[0])).map(([name, progress]) => {
               const isOpen = !!expandedEx[name];
               return (
                 <div key={name} className="card" style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div role="button" onClick={() => toggleEx(name)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}>
                     <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{history.length} workout(s)</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{progress.totalLogs} workout(s)</span>
                       <span style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', fontSize: '0.8rem', color: 'var(--accent)' }}>▼</span>
                     </div>
                   </div>
                   {isOpen && (
-                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {history.map((h, i) => (
-                        <div key={i} style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{h.date}</div>
-                          <div style={{ paddingLeft: '0.6rem', borderLeft: '2px solid var(--border)', color: 'var(--text-dim)', fontSize: '0.76rem', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {h.sets.map((s, si) => (
-                              <div key={si}>{s}</div>
-                            ))}
-                          </div>
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {progress.maxWeight > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                          <span style={{ color: 'var(--text-dim)' }}>Highest Weight Moved:</span>
+                          <strong style={{ color: 'var(--accent)' }}>{progress.maxWeight}{profile.unit || 'kg'}</strong>
                         </div>
-                      ))}
+                      )}
+                      {progress.maxTime > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                          <span style={{ color: 'var(--text-dim)' }}>Longest Time Held:</span>
+                          <strong style={{ color: 'var(--accent)' }}>{progress.maxTime}s</strong>
+                        </div>
+                      )}
+                      {progress.maxReps > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                          <span style={{ color: 'var(--text-dim)' }}>Max Reps Performed:</span>
+                          <strong style={{ color: 'var(--accent)' }}>{progress.maxReps} reps</strong>
+                        </div>
+                      )}
+                      {progress.maxWeight === 0 && progress.maxTime === 0 && progress.maxReps === 0 && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Completed as checkmark.
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: 4 }}>
+                        Based on {progress.totalLogs} logged workout(s)
+                      </div>
                     </div>
                   )}
                 </div>

@@ -20,6 +20,30 @@ const getSchemeDuration = (scheme) => {
   return null;
 };
 
+const RECOMMENDATIONS = {
+  'Sled Push (Heavy)': ['Kettlebell Swings', 'Heavy Goblet Squat', 'Sandbag Carry', 'Leg Press'],
+  'Dead Hang': ['Active Pull-Up Hang', 'Chin-Up Hang', 'Barbell Hold (Heavy)'],
+  'Weighted Plank': ['Standard Plank', 'Ab Wheel Rollouts', 'Hanging Knee Raise Hold'],
+  "Farmer's Carry": ['Kettlebell Suitcase Carry', 'Dumbbell Farmer\'s Walk', 'Sandbag Bear Hug Carry'],
+  'Back Squat': ['Front Squat', 'Goblet Squat', 'Barbell Box Squat', 'Leg Press'],
+  'Bench Press': ['Dumbbell Press', 'Floor Press', 'Push-Ups (Weighted)'],
+  'Overhead Press': ['Dumbbell Shoulder Press', 'Kettlebell Press', 'Pike Push-Ups'],
+  'Deadlift': ['Trap Bar Deadlift', 'Romanian Deadlift (RDL)', 'Kettlebell Deadlift (Heavy)'],
+  'Weighted Pull-Ups': ['Lat Pulldowns', 'Inverted Rows', 'Band-Assisted Pull-Ups'],
+  'Strict Bodyweight Pull-Ups': ['Inverted Rows', 'Band-Assisted Pull-Ups', 'Lat Pulldowns'],
+};
+
+const ALL_EXERCISES = [
+  'Back Squat', 'Bench Press', 'Weighted Pull-Ups', 'Bench Press (bodyweight)',
+  'Strict Bodyweight Pull-Ups', 'Tricep Pushdowns', 'Face Pulls', 'Foam Roll — full body',
+  'Couch / Hip-Flexor Stretch', 'Thoracic Rotations', '90/90 Hip Switches', 'Deadlift',
+  'Barbell Walking Lunges', 'Deficit Calf Raises', 'Overhead Press', 'Dumbbell Rows',
+  'Hanging Leg Raises', 'Dynamic Warm-up', 'Loaded 25m Shuttles', 'Sled Push (Heavy)',
+  'Weighted Plank', 'Dead Hang', "Farmer's Carry", 'Min 1 — Hip to Overhead',
+  'Min 2 — Walking Lunges', 'Min 3 — Bench Press', 'Min 4 — Pull-Ups', 'Min 5 — Rest',
+  'Kipping Pull-Up Practice', 'Bicep Curls', 'Hammer Curls'
+].sort();
+
 // Build initial set rows for an exercise from its scheme + weight memory.
 function initExercise(ex, profile, memory) {
   const { sets, reps } = parseScheme(ex.scheme);
@@ -161,24 +185,38 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 {editingIdx === ei ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                    <input
-                      type="text"
+                    <select
                       value={ex.name}
                       onChange={e => {
                         const val = e.target.value;
                         setExercises(prev => prev.map((item, idx) => idx !== ei ? item : { ...item, name: val }));
+                        setEditingIdx(null);
                       }}
-                      onKeyDown={e => { if (e.key === 'Enter') setEditingIdx(null); }}
                       style={{
-                        fontSize: '0.9rem', fontWeight: 700, padding: '0.2rem 0.5rem',
+                        fontSize: '0.9rem', fontWeight: 700, padding: '0.35rem 0.5rem',
                         background: 'var(--bg-elevated)', border: '1px solid var(--accent)',
-                        borderRadius: 6, color: 'var(--text)', width: 'auto', flex: 1
+                        borderRadius: 6, color: 'var(--text)', width: '100%', flex: 1,
+                        cursor: 'pointer', outline: 'none'
                       }}
                       autoFocus
-                    />
-                    <button className="btn btn-primary" onClick={() => setEditingIdx(null)}
+                    >
+                      <option value="" disabled>-- Select Substitute --</option>
+                      {RECOMMENDATIONS[ex.name] && (
+                        <optgroup label="Recommended Substitutes">
+                          {RECOMMENDATIONS[ex.name].map(alt => (
+                            <option key={alt} value={alt}>{alt}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All Movements">
+                        {ALL_EXERCISES.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <button className="btn btn-secondary" onClick={() => setEditingIdx(null)}
                       style={{ fontSize: '0.74rem', padding: '0.35rem 0.75rem', width: 'auto', flexShrink: 0 }}>
-                      Done
+                      Cancel
                     </button>
                   </div>
                 ) : (
@@ -245,6 +283,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
               {/* Set rows */}
               {ex.rows.map((row, si) => {
                 const isMaxTime = /max\s*time/i.test(ex.scheme) || /max\s*time/i.test(ex.name);
+                const isTimeCheck = ex.kind === 'check' && duration !== null;
                 return (
                   <div key={si} style={{
                     display: 'grid',
@@ -274,12 +313,15 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                     {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
                     {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
                     {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
-                    <button onClick={() => toggleDone(ei, si)} aria-label="toggle set done"
+                    <button onClick={isTimeCheck ? undefined : () => toggleDone(ei, si)} aria-label="toggle set done"
+                      disabled={isTimeCheck}
                       style={{
                         width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
                         background: row.done ? 'var(--success)' : 'var(--bg-elevated)',
                         color: row.done ? '#000' : 'var(--text-muted)',
                         border: `1px solid ${row.done ? 'var(--success)' : 'var(--border)'}`,
+                        opacity: isTimeCheck && !row.done ? 0.35 : 1,
+                        cursor: isTimeCheck ? 'default' : 'pointer',
                       }}>✓</button>
                   </div>
                 );

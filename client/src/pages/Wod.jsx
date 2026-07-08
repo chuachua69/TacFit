@@ -21,22 +21,72 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
   const badge = TYPE_BADGE[session.type] || TYPE_BADGE.lift;
   const runnable = session.exercises && session.exercises.length > 0;
 
+  const log = store.getWodLog(logId);
+  let statusText = 'Start ▶';
+  let statusColor = 'var(--accent)';
+  let borderColor = 'var(--border)';
+  let statusIcon = '';
+
+  if (skipped) {
+    statusText = 'Skipped / Failed';
+    statusColor = 'var(--danger)'; // red
+    borderColor = 'var(--danger)45';
+    statusIcon = '🔴';
+  } else if (done) {
+    if (log && log.totalSets > 0) {
+      const { doneCount = 0, totalSets = 0 } = log;
+      if (doneCount === totalSets) {
+        statusText = 'Completed';
+        statusColor = 'var(--success)'; // green
+        borderColor = 'var(--success)45';
+        statusIcon = '🟢';
+      } else if (doneCount > 0) {
+        statusText = `Partial (${doneCount}/${totalSets})`;
+        statusColor = 'var(--warn)'; // yellow
+        borderColor = 'var(--warn)45';
+        statusIcon = '🟡';
+      } else {
+        statusText = 'Failed (0 sets done)';
+        statusColor = 'var(--danger)'; // red
+        borderColor = 'var(--danger)45';
+        statusIcon = '🔴';
+      }
+    } else {
+      statusText = 'Completed';
+      statusColor = 'var(--success)';
+      borderColor = 'var(--success)45';
+      statusIcon = '🟢';
+    }
+  }
+
   const entry = { logId, day: dayKey, slot: session.slot, title: session.title, type: session.type, dayLabel: DAY_LABEL[dayKey] };
   const skip = () => { store.skipWod(entry); fxUncount(); onRefresh(); };
   const undo = () => { store.removeWod(logId); fxUncount(); onRefresh(); };
   const markDone = () => { store.saveWodSession(entry); fxCount(); onRefresh(); };
 
-  const borderColor = done ? 'var(--success)45' : skipped ? 'var(--warn)55' : 'var(--border)';
-
-  const slotTag = <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-    {session.slot === 'am' ? '🌅 AM' : '🌙 PM'}{session.optional ? ' · optional' : ''}
-  </span>;
+  const slotTag = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        {session.slot === 'am' ? '🌅 AM' : '🌙 PM'}{session.optional ? ' · optional' : ''}
+      </span>
+      {statusIcon && (
+        <span style={{
+          fontSize: '0.62rem', fontWeight: 800, color: statusColor,
+          background: `color-mix(in srgb, ${statusColor} 12%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${statusColor} 35%, transparent)`,
+          padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3
+        }}>
+          {statusIcon === '🟢' ? '✓' : statusIcon === '🟡' ? '⚠' : '⤫'} {statusText}
+        </span>
+      )}
+    </div>
+  );
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
       <div>
         {slotTag}
-        <div style={{ fontWeight: 800, marginTop: 2 }}>{session.title}</div>
+        <div style={{ fontWeight: 800, marginTop: 4 }}>{session.title}</div>
         <div style={{ fontSize: '0.72rem', color: 'var(--accent)', marginTop: 1 }}>{session.focus}</div>
       </div>
       <span style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 8px', borderRadius: 999, background: `color-mix(in srgb, ${badge.color} 18%, transparent)`, color: badge.color, border: `1px solid color-mix(in srgb, ${badge.color} 45%, transparent)`, whiteSpace: 'nowrap' }}>
@@ -62,8 +112,8 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
           {header}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{session.exercises.length} exercises</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: done ? 'var(--success)' : skipped ? 'var(--warn)' : 'var(--accent)' }}>
-              {done ? '✓ Logged — tap to edit' : skipped ? '⤫ Skipped — tap to do it' : 'Start ▶'}
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: statusColor }}>
+              {done ? `${statusText} — tap to edit` : skipped ? 'Skipped / Failed — tap to do it' : 'Start ▶'}
             </span>
           </div>
         </div>
