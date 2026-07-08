@@ -47,9 +47,16 @@ const ALL_EXERCISES = [
 // Build initial set rows for an exercise from its scheme + weight memory.
 function initExercise(ex, profile, memory) {
   const { sets, reps } = parseScheme(ex.scheme);
-  const target = ex.kind === 'weight'
-    ? (ex.targetPct && profile.bodyweight ? round(profile.bodyweight * ex.targetPct) : (memory[ex.name] || null))
-    : null;
+  let target = null;
+  if (ex.kind === 'weight') {
+    if (ex.targetWeight != null && ex.targetWeight > 0) {
+      target = ex.targetWeight;
+    } else if (ex.targetPct && profile.bodyweight) {
+      target = round(profile.bodyweight * ex.targetPct);
+    } else {
+      target = memory[ex.name] || null;
+    }
+  }
   return {
     ...ex,
     rows: Array.from({ length: sets }, () => ({
@@ -271,6 +278,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
               {ex.rows.map((row, si) => {
                 const isMaxTime = /max\s*time/i.test(ex.scheme) || /max\s*time/i.test(ex.name);
                 const isTimeCheck = ex.kind === 'check' && duration !== null;
+                const canToggle = !isTimeCheck || row.done;
 
                 // Determine checkbox color based on logged performance vs target reps
                 let checkColor = 'var(--bg-elevated)';
@@ -341,15 +349,15 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                     {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
                     {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
                     {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
-                    <button onClick={isTimeCheck ? undefined : () => toggleDone(ei, si)} aria-label="toggle set done"
-                      disabled={isTimeCheck}
+                    <button onClick={canToggle ? () => toggleDone(ei, si) : undefined} aria-label="toggle set done"
+                      disabled={!canToggle}
                       style={{
                         width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
                         background: checkColor,
                         color: checkTextColor,
                         border: `1px solid ${checkBorder}`,
-                        opacity: isTimeCheck && !row.done ? 0.35 : 1,
-                        cursor: isTimeCheck ? 'default' : 'pointer',
+                        opacity: !canToggle ? 0.35 : 1,
+                        cursor: canToggle ? 'pointer' : 'default',
                       }}>✓</button>
                   </div>
                 );
