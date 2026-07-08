@@ -1,13 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
 import { store, DEFAULT_PROFILE } from '../store/profile';
 import { setMuted, unlockAudio, fxAchievement } from '../lib/feedback';
+import { supabase } from '../lib/supabase';
 
 const LOAD_CLASSES = [40, 30, 20];
+
+// Epley: a 1RM is ~1.2664× an 8-rep max. We always store the 1RM; the 8RM
+// toggle just lets you enter/read the same lift as your 8-rep working weight.
+const EIGHT_TO_ONE = 1.2664;
+const toOneRM = (eightRM) => Math.round(eightRM * EIGHT_TO_ONE);
+const toEightRM = (oneRM) => Math.round(oneRM / EIGHT_TO_ONE);
 
 export default function Settings() {
   const [profile, setProfile] = useState(store.getProfile());
   const [saved, setSaved] = useState(false);
+  const [rmMode, setRmMode] = useState('1RM'); // view/edit lifts as 1RM or 8RM
+  const [showRmInfo, setShowRmInfo] = useState(false); // 1RM/8RM science explainer
+  const [account, setAccount] = useState(null); // signed-in Google email
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAccount(data.session?.user?.email || null));
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('dev_bypass');
+    window.location.reload();
+  };
 
   const set = (k, v) => setProfile(p => ({ ...p, [k]: v }));
 
@@ -35,7 +55,23 @@ export default function Settings() {
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Profile & prescribed loads</div>
       </div>
 
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+      {/* Signed-in account */}
+      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>Account</div>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {account || 'Guest (not signed in)'}
+          </div>
+        </div>
+        {account && (
+          <button className="btn btn-secondary" onClick={signOut}
+            style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', flexShrink: 0 }}>
+            Sign out
+          </button>
+        )}
+      </div>
+
+      <div id="tour-settings" className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
         <div>
           <div className="label">Bodyweight <span style={{ textTransform: 'none', color: 'var(--text-muted)' }}>· bench press load</span></div>
           {num('bodyweight', 40, 200, profile.unit)}
@@ -74,23 +110,67 @@ export default function Settings() {
       </div>
 
       <details className="card" style={{ cursor: 'pointer' }}>
-        <summary style={{ fontWeight: 700, outline: 'none' }}>Personal Lift Data (1RM)</summary>
+        <summary style={{ fontWeight: 700, outline: 'none' }}>Personal Lift Data</summary>
         <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {['squat', 'deadlift', 'bench', 'press'].map(lift => (
-            <div key={lift} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ textTransform: 'capitalize' }}>{lift}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="number" value={profile.oneRMs?.[lift] || 0}
-                  onChange={e => {
-                    const val = Number(e.target.value) || 0;
-                    setProfile(p => ({ ...p, oneRMs: { ...p.oneRMs, [lift]: val } }));
-                  }}
-                  style={{ width: 80, textAlign: 'center', padding: '0.4rem' }}
-                />
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>kg</span>
-              </div>
+          <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: 0 }}>
+            Enter each lift as your 1-rep max or your 8-rep working weight — we convert and store the 1RM either way. These drive your daily prescribed weights.
+          </p>
+
+          {/* 1RM / 8RM toggle + science explainer */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', gap: 6, background: 'var(--bg-elevated)', padding: 4, borderRadius: 999 }}>
+              {['1RM', '8RM'].map(m => (
+                <button key={m} onClick={() => setRmMode(m)}
+                  className={`btn ${rmMode === m ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '0.45rem 0', fontSize: '0.82rem' }}>
+                  {m === '1RM' ? '1 Rep Max' : '8 Rep Max'}
+                </button>
+              ))}
             </div>
-          ))}
+            <button onClick={() => setShowRmInfo(v => !v)} aria-label="How the conversion works"
+              style={{
+                width: 32, height: 32, flexShrink: 0, borderRadius: 999, fontWeight: 800,
+                background: showRmInfo ? 'var(--accent)' : 'var(--bg-elevated)',
+                color: showRmInfo ? '#000' : 'var(--text-muted)',
+                border: '1px solid var(--border)',
+              }}>
+              ?
+            </button>
+          </div>
+
+          {showRmInfo && (
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', lineHeight: 1.55, background: 'var(--bg-elevated)', padding: '0.8rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+              <strong style={{ color: 'var(--text)' }}>The science:</strong> testing a true 1-rep max is risky and needs a spotter. Instead, lift a weight you can do for ~8 clean reps and we estimate your max with the <strong style={{ color: 'var(--text)' }}>Epley formula</strong>:
+              <div style={{ margin: '0.5rem 0', textAlign: 'center', color: 'var(--accent)', fontWeight: 700 }}>1RM ≈ weight × (1 + reps ÷ 30)</div>
+              At 8 reps that's about <strong style={{ color: 'var(--text)' }}>1.27×</strong> your 8-rep weight — accurate enough to prescribe training loads without ever maxing out.
+            </div>
+          )}
+
+          {['squat', 'deadlift', 'bench', 'press'].map(lift => {
+            const oneRM = profile.oneRMs?.[lift] || 0;
+            const shown = rmMode === '8RM' ? toEightRM(oneRM) : oneRM;
+            return (
+              <div key={lift} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <span style={{ textTransform: 'capitalize' }}>{lift}</span>
+                  {rmMode === '8RM' && oneRM > 0 && (
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>1RM ≈ {oneRM} kg</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="number" value={shown || 0}
+                    onChange={e => {
+                      const entered = Number(e.target.value) || 0;
+                      const stored = rmMode === '8RM' ? toOneRM(entered) : entered;
+                      setProfile(p => ({ ...p, oneRMs: { ...p.oneRMs, [lift]: stored } }));
+                    }}
+                    style={{ width: 80, textAlign: 'center', padding: '0.4rem' }}
+                  />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>kg · {rmMode}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </details>
 

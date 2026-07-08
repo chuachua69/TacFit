@@ -60,12 +60,43 @@ export default function Progress() {
   const skipRate = totalLogged ? skippedWod.length / totalLogged : 0;
   const skipInfo = SKIP_INFO[dominantType] || SKIP_INFO.lift;
 
+  // 6-week cycle status
+  const profile = store.getProfile();
+  const startDate = profile.programStartDate ? new Date(profile.programStartDate) : null;
+  const daysIn = startDate ? Math.max(0, Math.floor((Date.now() - startDate.getTime()) / 86400000)) : 0;
+  const currentWeek = startDate ? Math.min(6, Math.floor(daysIn / 7) + 1) : 1;
+  const cyclePct = startDate ? Math.min(100, Math.round((daysIn / 42) * 100)) : 0;
+  const testDue = startDate && daysIn >= 42;
+
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
-      <div>
+      <div id="tour-progress">
         <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>PROGRESS</div>
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Assessments · events · training</div>
       </div>
+
+      {/* 6-week cycle status */}
+      {startDate && (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div>
+              <div style={{ fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>6-week cycle</div>
+              <div style={{ fontWeight: 700 }}>Started {fmtDate(profile.programStartDate)}</div>
+            </div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--accent)', lineHeight: 1 }}>
+              Wk {currentWeek}<span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/6</span>
+            </div>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${cyclePct}%`, background: 'var(--accent)', borderRadius: 999, transition: 'width .3s' }} />
+          </div>
+          <div style={{ fontSize: '0.72rem', fontWeight: testDue ? 700 : 400, color: testDue ? 'var(--accent)' : 'var(--text-muted)' }}>
+            {testDue
+              ? '✓ 6 weeks done — retest on the Test tab, then recalibrate your lifts.'
+              : `${42 - daysIn} days until test day.`}
+          </div>
+        </div>
+      )}
 
       {/* Best passing score */}
       {bestAttempt && (

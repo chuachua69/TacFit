@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Target, Activity } from 'lucide-react';
+import { Target } from 'lucide-react';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -17,10 +17,6 @@ export default function Auth() {
     });
     if (error) console.error('Error logging in:', error.message);
     setLoading(false);
-  };
-
-  const handleStravaLogin = async () => {
-    alert('Strava integration requires Client ID/Secret configuration on the developer portal.');
   };
 
   const handleDevBypass = () => {
@@ -44,14 +40,6 @@ export default function Auth() {
           style={{ padding: '1rem' }}
         >
           {loading ? 'Connecting...' : 'Continue with Google'}
-        </button>
-
-        <button 
-          className="btn btn-secondary" 
-          onClick={handleStravaLogin}
-          style={{ padding: '1rem' }}
-        >
-          <Activity size={18} /> Connect with Strava
         </button>
 
         {import.meta.env.DEV && (

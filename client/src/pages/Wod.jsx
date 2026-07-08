@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
 import SessionRunner from '../components/SessionRunner';
 import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount, fxUncount } from '../lib/feedback';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
 
 const TYPE_BADGE = {
   lift: { label: 'Strength', color: 'var(--gym)' },
@@ -137,24 +135,6 @@ export default function Wod() {
   };
 
   const profile = store.getProfile();
-
-  useEffect(() => {
-    if (!profile.tutorialSeen) {
-      const d = driver({
-        showProgress: true,
-        steps: [
-          { element: '#tutorial-views', popover: { title: 'Views', description: 'Toggle between today, tomorrow, or the full week calendar.', side: 'bottom', align: 'start' } },
-          { element: '.tutorial-session', popover: { title: 'Sessions', description: 'Tap a session card to open the workout logger and log your sets.', side: 'top', align: 'start' } },
-          { element: '#tutorial-nav', popover: { title: 'Navigation', description: 'Access tests, view progress, and edit settings here.', side: 'top', align: 'center' } }
-        ],
-        onDestroyStarted: () => {
-          store.setProfile({ tutorialSeen: true });
-          d.destroy();
-        }
-      });
-      d.drive();
-    }
-  }, [profile.tutorialSeen]);
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>

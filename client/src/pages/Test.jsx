@@ -32,7 +32,7 @@ export default function Test() {
       </div>
 
       {/* Full assessment */}
-      <button className="card" onClick={() => navigate('/assessment')}
+      <button id="tour-test" className="card" onClick={() => navigate('/assessment')}
         style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: '1px solid var(--accent)', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: '1.8rem' }}>🎯</span>

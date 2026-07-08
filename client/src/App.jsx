@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Wod from './pages/Wod';
 import Test from './pages/Test';
 import Calculator from './pages/Calculator';
@@ -9,10 +9,24 @@ import ReloadPrompt from './components/ReloadPrompt';
 import Auth from './components/Auth';
 import Onboarding from './pages/Onboarding';
 import { store } from './store/profile';
-import { setMuted } from './lib/feedback';
+import { setMuted, isMuted, unlockAudio, fxTap } from './lib/feedback';
 import { isGuarded } from './lib/guard';
 import { supabase } from './lib/supabase';
+import { startAppTour } from './lib/tour';
 import './styles/global.css';
+
+// Runs the whole-app guided tour once, after onboarding. Lives inside the
+// router so it can navigate between tabs as it highlights each one.
+function TourRunner() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    // startAppTour has its own singleton guard, so a double-invoke is harmless.
+    if (store.getProfile().tutorialSeen) return;
+    const t = setTimeout(() => startAppTour(navigate), 500);
+    return () => clearTimeout(t);
+  }, [navigate]);
+  return null;
+}
 
 // Apply saved mute preference on load
 setMuted(store.getProfile().muted);
@@ -35,6 +49,19 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Universal tap feedback: every tap anywhere in the app gets a subtle
+    // click + haptic (respects the Sound & haptics toggle). Also unlocks audio
+    // on the first gesture so later cues can play on iOS/Safari.
+    const onTap = () => {
+      if (isMuted()) return;
+      unlockAudio();
+      fxTap();
+    };
+    document.addEventListener('click', onTap, true);
+    return () => document.removeEventListener('click', onTap, true);
   }, []);
 
   useEffect(() => {
@@ -72,6 +99,7 @@ export default function App() {
   return (
     <HashRouter>
       <ReloadPrompt />
+      <TourRunner />
       <Routes>
         <Route path="/" element={<Wod />} />
         <Route path="/test" element={<Test />} />
