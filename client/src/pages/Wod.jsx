@@ -4,6 +4,8 @@ import SessionRunner from '../components/SessionRunner';
 import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount, fxUncount } from '../lib/feedback';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 const TYPE_BADGE = {
   lift: { label: 'Strength', color: 'var(--gym)' },
@@ -56,7 +58,7 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
   // Runnable session → clickable region opens the runner
   if (runnable) {
     return (
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${borderColor}` }}>
+      <div className="card tutorial-session" style={{ display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${borderColor}` }}>
         <div role="button" tabIndex={0} onClick={() => onRun(session, dayKey, date)}
           style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {header}
@@ -136,12 +138,32 @@ export default function Wod() {
 
   const profile = store.getProfile();
 
+  import('react').then(({ useEffect }) => {
+    useEffect(() => {
+      if (!profile.tutorialSeen) {
+        const d = driver({
+          showProgress: true,
+          steps: [
+            { element: '#tutorial-views', popover: { title: 'Views', description: 'Toggle between today, tomorrow, or the full week calendar.', side: 'bottom', align: 'start' } },
+            { element: '.tutorial-session', popover: { title: 'Sessions', description: 'Tap a session card to open the workout logger and log your sets.', side: 'top', align: 'start' } },
+            { element: '#tutorial-nav', popover: { title: 'Navigation', description: 'Access tests, view progress, and edit settings here.', side: 'top', align: 'center' } }
+          ],
+          onDestroyStarted: () => {
+            store.setProfile({ tutorialSeen: true });
+            d.destroy();
+          }
+        });
+        d.drive();
+      }
+    }, [profile.tutorialSeen]);
+  });
+
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
       {/* Title + Tdy / Tmr / Week toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>WOD</div>
-        <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: 3 }}>
+        <div id="tutorial-views" style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: 3 }}>
           {[['today', 'Tdy'], ['tomorrow', 'Tmr'], ['week', 'Week']].map(([v, label]) => (
             <button key={v} onClick={() => setView(v)}
               style={{

@@ -95,6 +95,19 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
           </div>
         )}
 
+        {session.type === 'lift' && (
+          <details className="card" style={{ cursor: 'pointer', padding: '0.8rem 1rem' }}>
+            <summary style={{ fontWeight: 700, outline: 'none', color: 'var(--accent)' }}>🔥 Warm-Up Protocol</summary>
+            <div style={{ marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '0.6rem', lineHeight: 1.5 }}>
+              <div><strong>Set 1 (Mobility):</strong> Empty Bar × 10 reps (Deep ROM, perfect form)</div>
+              <div><strong>Set 2 (Activation):</strong> 50% × 5 reps (Move fast & explosive)</div>
+              <div><strong>Set 3 (Potentiating):</strong> 70% × 3 reps (Crisp, clean reps to prime CNS)</div>
+              <div><strong>Set 4 (The Gateway):</strong> 85% × 1 rep (A single feeler rep)</div>
+              <div style={{ marginTop: '0.4rem', fontStyle: 'italic' }}>Rest 2–3 mins before your first working set. Keep warm-ups smooth, save your true violence for the working sets, and smash it!</div>
+            </div>
+          </details>
+        )}
+
         {/* Exercises */}
         {exercises.map((ex, ei) => (
           <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '1rem' }}>

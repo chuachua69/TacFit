@@ -73,6 +73,45 @@ export default function Settings() {
         </div>
       </div>
 
+      <details className="card" style={{ cursor: 'pointer' }}>
+        <summary style={{ fontWeight: 700, outline: 'none' }}>Personal Lift Data (1RM)</summary>
+        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {['squat', 'deadlift', 'bench', 'press'].map(lift => (
+            <div key={lift} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ textTransform: 'capitalize' }}>{lift}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="number" value={profile.oneRMs?.[lift] || 0}
+                  onChange={e => {
+                    const val = Number(e.target.value) || 0;
+                    setProfile(p => ({ ...p, oneRMs: { ...p.oneRMs, [lift]: val } }));
+                  }}
+                  style={{ width: 80, textAlign: 'center', padding: '0.4rem' }}
+                />
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>kg</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </details>
+
+      <details className="card" style={{ cursor: 'pointer' }}>
+        <summary style={{ fontWeight: 700, outline: 'none' }}>Frequently Asked Questions</summary>
+        <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <strong style={{ color: 'var(--text)' }}>What happens if I skip a workout?</strong><br/>
+            The 6-week calendar keeps moving forward. However, to prevent injury, the percentage progression for the specific lift you skipped will pause until you complete it next week.
+          </div>
+          <div>
+            <strong style={{ color: 'var(--text)' }}>How are my daily weights calculated?</strong><br/>
+            They are generated dynamically based on the 1RM data you enter and the week of the program you are currently in.
+          </div>
+        </div>
+      </details>
+
+      <button className="btn btn-secondary" onClick={() => window.location.href = 'mailto:support@tacfit.app'}>
+        Submit Feedback
+      </button>
+
       {/* Feedback prefs */}
       <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>

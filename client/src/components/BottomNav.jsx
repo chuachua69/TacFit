@@ -10,7 +10,7 @@ const TABS = [
 export default function BottomNav({ active }) {
   const navigate = useNavigate();
   return (
-    <nav style={{
+    <nav id="tutorial-nav" style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
       background: 'var(--bg-card)', borderTop: '1px solid var(--border)',
       display: 'flex', zIndex: 50, paddingBottom: 'env(safe-area-inset-bottom)',

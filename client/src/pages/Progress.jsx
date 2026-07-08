@@ -12,23 +12,23 @@ const TYPE_LABEL = { lift: 'Strength', conditioning: 'Conditioning', run: 'Run',
 const SKIP_INFO = {
   lift: {
     area: 'Strength',
-    impact: 'Bench-press and pull-up numbers stall when strength days are missed — those two events lean directly on max strength.',
-    remedy: 'Make up a Heavy Push/Pull or Lower-Body session before test day.',
+    impact: 'Your lifts will get weak. You need raw strength for the test.',
+    remedy: 'Do a heavy workout this week to catch up.',
   },
   conditioning: {
     area: 'Work capacity',
-    impact: 'Shuttle speed-endurance and the EMOM circuit (Event 5 + the full test) fade fastest — conditioning is use-it-or-lose-it.',
-    remedy: 'Slot in a loaded-shuttle or EMOM session this week.',
+    impact: 'You will run out of gas fast. Conditioning disappears quickly if you don\'t use it.',
+    remedy: 'Do some sprints or an EMOM workout this week.',
   },
   run: {
     area: 'Aerobic base',
-    impact: 'Your aerobic engine drives recovery between events; missed runs show up as fading in the later rounds.',
-    remedy: 'Get an easy Zone 2 run in on a rest day.',
+    impact: 'You will get tired between events without a strong heart.',
+    remedy: 'Go for an easy jog on your rest day.',
   },
   mobility: {
     area: 'Recovery',
-    impact: 'Skipping mobility builds stiffness and injury risk, quietly capping how hard your key sessions can go.',
-    remedy: 'A 10-minute mobility flow is enough to stay ahead.',
+    impact: 'You will get stiff and risk getting hurt.',
+    remedy: 'Do a quick 10-minute stretch.',
   },
 };
 
@@ -154,8 +154,8 @@ export default function Progress() {
 
           <div style={{ fontSize: '0.8rem', fontWeight: 600, color: skipRate > 0.3 ? 'var(--warn)' : 'var(--text-muted)', background: 'var(--bg-elevated)', borderRadius: 8, padding: '0.6rem 0.85rem' }}>
             {skipRate > 0.3
-              ? `You're missing ${Math.round(skipRate * 100)}% of sessions — do more: add 1–2 make-up sessions this week, or trim the optional PM slots so the plan stays realistic.`
-              : 'A few misses is fine — just make up the key strength & conditioning days before test week.'}
+              ? `You missed ${Math.round(skipRate * 100)}% of your workouts. You need to do 1-2 make-up sessions or skip the optional PM workouts so you don't burn out.`
+              : 'A few missed workouts are fine. Just make sure to do your heavy lifts before test week.'}
           </div>
         </div>
       )}

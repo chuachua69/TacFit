@@ -52,6 +52,12 @@ export function fxCount() {
   vibrate(18);
 }
 
+/** Subtle pop and light vibration for general UI interaction (buttons, tabs). */
+export function fxTap() {
+  beep(400, 0.02, 0.03, 'sine');
+  vibrate(5);
+}
+
 /** Soft downward blip when decrementing. */
 export function fxUncount() {
   beep(420, 0.03, 0.04, 'square');

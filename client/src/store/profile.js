@@ -2,6 +2,8 @@
  * Local persistence — user profile (bodyweight, prescribed loads, prefs) and
  * saved test attempts. All on-device via localStorage.
  */
+import { supabase } from '../lib/supabase';
+
 const KEYS = {
   PROFILE: 'tac5_profile',
   ATTEMPTS: 'tac5_attempts',   // full 5-event assessment attempts
@@ -11,6 +13,15 @@ const KEYS = {
 };
 
 export const DEFAULT_PROFILE = {
+  setupComplete: false,
+  tutorialSeen: false,
+  programStartDate: null,
+  oneRMs: {
+    squat: 0,
+    deadlift: 0,
+    bench: 0,
+    press: 0
+  },
   bodyweight: 77,          // kg — bench load
   loadClass: 40,           // kg — 40/30/20 weight class for events 1 & 2
   externalLoad: 10,        // kg — plate carrier for pull-ups & shuttles
@@ -18,13 +29,51 @@ export const DEFAULT_PROFILE = {
   muted: false,
 };
 
+// Helper to push ALL app state to Supabase in the background
+async function syncToSupabase() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  
+  const fullState = {
+    profile: JSON.parse(localStorage.getItem(KEYS.PROFILE) || 'null'),
+    attempts: JSON.parse(localStorage.getItem(KEYS.ATTEMPTS) || '[]'),
+    events: JSON.parse(localStorage.getItem(KEYS.EVENTS) || '[]'),
+    wod: JSON.parse(localStorage.getItem(KEYS.WOD) || '[]'),
+    exmem: JSON.parse(localStorage.getItem(KEYS.EXMEM) || '{}')
+  };
+
+  await supabase.from('profiles').upsert({
+    id: session.user.id,
+    data: fullState,
+    updated_at: new Date().toISOString()
+  });
+}
+
 export const store = {
   getProfile() {
     const saved = JSON.parse(localStorage.getItem(KEYS.PROFILE) || 'null');
     return { ...DEFAULT_PROFILE, ...(saved || {}) };
   },
+  async fetchProfile() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data } = await supabase.from('profiles').select('data').eq('id', session.user.id).single();
+      if (data && data.data && data.data.profile) {
+        // Restore full state from cloud
+        if (data.data.profile) localStorage.setItem(KEYS.PROFILE, JSON.stringify(data.data.profile));
+        if (data.data.attempts) localStorage.setItem(KEYS.ATTEMPTS, JSON.stringify(data.data.attempts));
+        if (data.data.events) localStorage.setItem(KEYS.EVENTS, JSON.stringify(data.data.events));
+        if (data.data.wod) localStorage.setItem(KEYS.WOD, JSON.stringify(data.data.wod));
+        if (data.data.exmem) localStorage.setItem(KEYS.EXMEM, JSON.stringify(data.data.exmem));
+        return data.data.profile;
+      }
+    }
+    return this.getProfile();
+  },
   setProfile(p) {
-    localStorage.setItem(KEYS.PROFILE, JSON.stringify({ ...store.getProfile(), ...p }));
+    const newProfile = { ...store.getProfile(), ...p };
+    localStorage.setItem(KEYS.PROFILE, JSON.stringify(newProfile));
+    syncToSupabase();
   },
 
   getAttempts() {
@@ -34,11 +83,13 @@ export const store = {
     const all = store.getAttempts();
     all.push({ ...a, id: Date.now(), date: new Date().toISOString() });
     localStorage.setItem(KEYS.ATTEMPTS, JSON.stringify(all));
+    syncToSupabase();
     return all;
   },
   removeAttempt(id) {
     const all = store.getAttempts().filter(a => a.id !== id);
     localStorage.setItem(KEYS.ATTEMPTS, JSON.stringify(all));
+    syncToSupabase();
     return all;
   },
 
@@ -50,11 +101,13 @@ export const store = {
     const all = store.getEventLogs();
     all.push({ ...log, id: Date.now(), date: new Date().toISOString() });
     localStorage.setItem(KEYS.EVENTS, JSON.stringify(all));
+    syncToSupabase();
     return all;
   },
   removeEventLog(id) {
     const all = store.getEventLogs().filter(a => a.id !== id);
     localStorage.setItem(KEYS.EVENTS, JSON.stringify(all));
+    syncToSupabase();
     return all;
   },
 
@@ -83,6 +136,7 @@ export const store = {
     if (idx >= 0) all[idx] = record;
     else all.push(record);
     localStorage.setItem(KEYS.WOD, JSON.stringify(all));
+    syncToSupabase();
     return all;
   },
   skipWod(entry) {
@@ -91,6 +145,7 @@ export const store = {
   removeWod(logId) {
     const all = store.getWodLogs().filter(w => w.logId !== logId);
     localStorage.setItem(KEYS.WOD, JSON.stringify(all));
+    syncToSupabase();
     return all;
   },
 
@@ -101,6 +156,7 @@ export const store = {
   rememberWeights(map) {
     const mem = { ...store.getExMemory(), ...map };
     localStorage.setItem(KEYS.EXMEM, JSON.stringify(mem));
+    syncToSupabase();
     return mem;
   },
 };
