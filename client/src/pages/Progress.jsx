@@ -36,9 +36,49 @@ export default function Progress() {
   const [attempts, setAttempts] = useState(() => store.getAttempts().slice().reverse());
   const [eventLogs, setEventLogs] = useState(() => store.getEventLogs());
   const wodLogs = store.getWodLogs();
+  const [expandedEx, setExpandedEx] = useState({});
+  const toggleEx = (name) => { setExpandedEx(prev => ({ ...prev, [name]: !prev[name] })); };
 
   const removeAttempt = (id) => { store.removeAttempt(id); setAttempts(store.getAttempts().slice().reverse()); };
   const removeEvent = (id) => { store.removeEventLog(id); setEventLogs(store.getEventLogs()); };
+
+  // Parse WOD logs to extract exercise history
+  const profile = store.getProfile();
+  const exerciseHistory = {};
+  wodLogs.forEach(w => {
+    if (w.status !== 'done' && w.status !== undefined) return;
+    const dateStr = fmtDate(w.date || w.id);
+    w.exercises?.forEach(ex => {
+      const doneSets = ex.rows?.filter(r => r.done) || [];
+      if (doneSets.length === 0) return;
+      
+      if (!exerciseHistory[ex.name]) {
+        exerciseHistory[ex.name] = [];
+      }
+      
+      const setDetails = doneSets.map((r, idx) => {
+        if (ex.kind === 'check') return `Set ${idx + 1}: Done`;
+        const parts = [];
+        if (r.weight != null) parts.push(`${r.weight}${profile.unit || 'kg'}`);
+        if (r.reps != null && r.reps !== 'max') parts.push(`${r.reps} reps`);
+        else if (r.reps === 'max') parts.push('max reps');
+        if (r.rpe != null) parts.push(`@RPE ${r.rpe}`);
+        return `Set ${idx + 1}: ${parts.join(' × ') || 'Done'}`;
+      });
+
+      exerciseHistory[ex.name].push({
+        date: dateStr,
+        timestamp: new Date(w.date || w.id).getTime(),
+        sets: setDetails
+      });
+    });
+  });
+
+  // Sort each exercise history by date descending
+  Object.keys(exerciseHistory).forEach(name => {
+    const history = exerciseHistory[name];
+    history.sort((a, b) => b.timestamp - a.timestamp);
+  });
 
   const bestAttempt = attempts.reduce((m, a) => (a.allMet && a.totalBonus > (m?.totalBonus ?? -1) ? a : m), null);
 
@@ -61,7 +101,6 @@ export default function Progress() {
   const skipInfo = SKIP_INFO[dominantType] || SKIP_INFO.lift;
 
   // 6-week cycle status
-  const profile = store.getProfile();
   const startDate = profile.programStartDate ? new Date(profile.programStartDate) : null;
   const daysIn = startDate ? Math.max(0, Math.floor((Date.now() - startDate.getTime()) / 86400000)) : 0;
   const currentWeek = startDate ? Math.min(6, Math.floor(daysIn / 7) + 1) : 1;
@@ -190,6 +229,47 @@ export default function Progress() {
           </div>
         </div>
       )}
+
+      {/* Exercise History & Progress Accordion */}
+      <div>
+        <div className="label">Exercise History & Progress</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {Object.keys(exerciseHistory).length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem', fontSize: '0.85rem' }}>
+              No exercise history logged yet. Complete workouts in the WOD tab to track your progress here.
+            </div>
+          ) : (
+            Object.entries(exerciseHistory).sort((a, b) => a[0].localeCompare(b[0])).map(([name, history]) => {
+              const isOpen = !!expandedEx[name];
+              return (
+                <div key={name} className="card" style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div role="button" onClick={() => toggleEx(name)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{history.length} workout(s)</span>
+                      <span style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', fontSize: '0.8rem', color: 'var(--accent)' }}>▼</span>
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {history.map((h, i) => (
+                        <div key={i} style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{h.date}</div>
+                          <div style={{ paddingLeft: '0.6rem', borderLeft: '2px solid var(--border)', color: 'var(--text-dim)', fontSize: '0.76rem', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {h.sets.map((s, si) => (
+                              <div key={si}>{s}</div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
       {/* Assessment attempt history */}
       <div>

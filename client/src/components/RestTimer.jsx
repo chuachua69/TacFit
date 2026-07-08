@@ -4,7 +4,7 @@ import { fxCountdownTick, startAlarm, stopAlarm, unlockAudio } from '../lib/feed
 const PRESETS = [60, 90, 120, 180];
 
 /** Compact rest-timer bottom sheet with a circular countdown. */
-export default function RestTimer({ start = 90, onDismiss }) {
+export default function RestTimer({ start = 90, title = 'Rest Timer', showPresets = true, onDismiss }) {
   const [seconds, setSeconds] = useState(start);
   const [remaining, setRemaining] = useState(start);
   const [running, setRunning] = useState(true);
@@ -45,7 +45,7 @@ export default function RestTimer({ start = 90, onDismiss }) {
       <div style={{ background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', borderTop: '1px solid var(--border)', padding: '1.5rem', width: '100%', maxWidth: 480, margin: '0 auto' }}>
         <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 999, margin: '0 auto 1.25rem' }} />
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 14 }}>Rest Timer</div>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 14 }}>{title}</div>
           <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 16px', cursor: 'pointer' }} onClick={toggle}>
             <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
               <circle cx="60" cy="60" r={R} fill="none" stroke="var(--border)" strokeWidth="6" />
@@ -60,16 +60,18 @@ export default function RestTimer({ start = 90, onDismiss }) {
               {!done && <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{running ? 'tap to pause' : '▶ paused'}</div>}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
-            {PRESETS.map(s => (
-              <button key={s} onClick={() => reset(s)}
-                style={{ padding: '0.35rem 0.75rem', borderRadius: 999, background: seconds === s ? 'var(--accent)30' : 'var(--bg-elevated)', border: `1px solid ${seconds === s ? 'var(--accent)' : 'var(--border)'}`, fontSize: '0.8rem', fontWeight: 700, color: seconds === s ? 'var(--accent)' : 'var(--text-muted)' }}>
-                {s >= 60 ? `${s / 60}m` : `${s}s`}
-              </button>
-            ))}
-          </div>
+          {showPresets && (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
+              {PRESETS.map(s => (
+                <button key={s} onClick={() => reset(s)}
+                  style={{ padding: '0.35rem 0.75rem', borderRadius: 999, background: seconds === s ? 'var(--accent)30' : 'var(--bg-elevated)', border: `1px solid ${seconds === s ? 'var(--accent)' : 'var(--border)'}`, fontSize: '0.8rem', fontWeight: 700, color: seconds === s ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  {s >= 60 ? `${s / 60}m` : `${s}s`}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <button className="btn btn-primary" onClick={dismiss}>{done ? 'Stop Alarm ✓' : 'Skip Rest'}</button>
+        <button className="btn btn-primary" onClick={dismiss}>{done ? 'Stop Alarm ✓' : title === 'Rest Timer' ? 'Skip Rest' : 'Done'}</button>
       </div>
     </div>
   );

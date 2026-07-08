@@ -8,6 +8,17 @@ import { pushGuard } from '../lib/guard';
 
 const round = (v) => Math.round(v / 2.5) * 2.5;
 
+// Function to extract time duration from a scheme string
+const getSchemeDuration = (scheme) => {
+  if (!scheme) return null;
+  const secMatch = scheme.match(/(\d+)\s*s/i);
+  if (secMatch) return parseInt(secMatch[1]);
+  const minMatch = scheme.match(/(\d+)\s*min/i);
+  if (minMatch) return parseInt(minMatch[1]) * 60;
+  if (/max\s*time/i.test(scheme)) return 60; // default 60s for max time
+  return null;
+};
+
 // Build initial set rows for an exercise from its scheme + weight memory.
 function initExercise(ex, profile, memory) {
   const { sets, reps } = parseScheme(ex.scheme);
@@ -38,6 +49,8 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
       : session.exercises.map(ex => initExercise(ex, profile, memory)),
   );
   const [resting, setResting] = useState(false);
+  const [activeTimer, setActiveTimer] = useState(null); // { name, seconds }
+  const [editingIdx, setEditingIdx] = useState(null); // index of exercise being swapped/edited
   const [emom, setEmom] = useState(false);
   const unit = profile.unit || 'kg';
 
@@ -109,53 +122,128 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
         )}
 
         {/* Exercises */}
-        {exercises.map((ex, ei) => (
-          <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontWeight: 700 }}>{ex.name}</span>
-              <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{ex.scheme}</span>
+        {exercises.map((ex, ei) => {
+          const duration = getSchemeDuration(ex.scheme);
+          return (
+            <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                {editingIdx === ei ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <input
+                      type="text"
+                      value={ex.name}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setExercises(prev => prev.map((item, idx) => idx !== ei ? item : { ...item, name: val }));
+                      }}
+                      onKeyDown={e => { if (e.key === 'Enter') setEditingIdx(null); }}
+                      style={{
+                        fontSize: '0.9rem', fontWeight: 700, padding: '0.2rem 0.5rem',
+                        background: 'var(--bg-elevated)', border: '1px solid var(--accent)',
+                        borderRadius: 6, color: 'var(--text)', width: 'auto', flex: 1
+                      }}
+                      autoFocus
+                    />
+                    <button className="btn btn-primary" onClick={() => setEditingIdx(null)}
+                      style={{ fontSize: '0.74rem', padding: '0.35rem 0.75rem', width: 'auto', flexShrink: 0 }}>
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</span>
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Watch video demonstration"
+                      style={{ fontSize: '1rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
+                    >
+                      📺
+                    </a>
+                    <button
+                      onClick={() => setEditingIdx(ei)}
+                      style={{
+                        fontSize: '0.66rem', padding: '2px 6px', borderRadius: 4,
+                        background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                        color: 'var(--text-muted)', fontWeight: 700, cursor: 'pointer', flexShrink: 0
+                      }}
+                    >
+                      🔄 Swap
+                    </button>
+                  </div>
+                )}
+
+                {editingIdx !== ei && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{ex.scheme}</span>
+                    {duration !== null && (
+                      <button
+                        onClick={() => setActiveTimer({ name: ex.name, seconds: duration })}
+                        style={{
+                          fontSize: '0.7rem', padding: '3px 8px', borderRadius: 6,
+                          background: 'var(--accent)20', border: '1px solid var(--accent)50',
+                          color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        ⏱ Timer
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {ex.note && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: -4, lineHeight: 1.4 }}>{ex.note}</div>}
+              {ex.kind === 'weight' && ex.targetPct && profile.bodyweight > 0 && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>🎯 Target ≈ {round(profile.bodyweight * ex.targetPct)} {unit}</div>
+              )}
+
+              {/* Column headers */}
+              {ex.kind !== 'check' && (
+                <div style={{ display: 'grid', gridTemplateColumns: ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px', gap: 8, fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, padding: '0 2px' }}>
+                  <span>Set</span>
+                  {ex.kind === 'weight' && <span style={{ textAlign: 'center' }}>{unit}</span>}
+                  <span style={{ textAlign: 'center' }}>Reps</span>
+                  <span style={{ textAlign: 'center' }}>RPE</span>
+                  <span />
+                </div>
+              )}
+
+              {/* Set rows */}
+              {ex.rows.map((row, si) => (
+                <div key={si} style={{
+                  display: 'grid',
+                  gridTemplateColumns: ex.kind === 'check' ? '28px 1fr 40px' : ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px',
+                  gap: 8, alignItems: 'center', opacity: row.done ? 0.55 : 1,
+                }}>
+                  <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{si + 1}</span>
+                  {ex.kind === 'check' && <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>{ex.scheme}</span>}
+                  {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
+                  {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
+                  {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
+                  <button onClick={() => toggleDone(ei, si)} aria-label="toggle set done"
+                    style={{
+                      width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
+                      background: row.done ? 'var(--success)' : 'var(--bg-elevated)',
+                      color: row.done ? '#000' : 'var(--text-muted)',
+                      border: `1px solid ${row.done ? 'var(--success)' : 'var(--border)'}`,
+                    }}>✓</button>
+                </div>
+              ))}
             </div>
-            {ex.note && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: -4, lineHeight: 1.4 }}>{ex.note}</div>}
-            {ex.kind === 'weight' && ex.targetPct && profile.bodyweight > 0 && (
-              <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>🎯 Target ≈ {round(profile.bodyweight * ex.targetPct)} {unit}</div>
-            )}
-
-            {/* Column headers */}
-            {ex.kind !== 'check' && (
-              <div style={{ display: 'grid', gridTemplateColumns: ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px', gap: 8, fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, padding: '0 2px' }}>
-                <span>Set</span>
-                {ex.kind === 'weight' && <span style={{ textAlign: 'center' }}>{unit}</span>}
-                <span style={{ textAlign: 'center' }}>Reps</span>
-                <span style={{ textAlign: 'center' }}>RPE</span>
-                <span />
-              </div>
-            )}
-
-            {/* Set rows */}
-            {ex.rows.map((row, si) => (
-              <div key={si} style={{
-                display: 'grid',
-                gridTemplateColumns: ex.kind === 'check' ? '28px 1fr 40px' : ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px',
-                gap: 8, alignItems: 'center', opacity: row.done ? 0.55 : 1,
-              }}>
-                <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{si + 1}</span>
-                {ex.kind === 'check' && <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>{ex.scheme}</span>}
-                {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
-                {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
-                {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
-                <button onClick={() => toggleDone(ei, si)} aria-label="toggle set done"
-                  style={{
-                    width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
-                    background: row.done ? 'var(--success)' : 'var(--bg-elevated)',
-                    color: row.done ? '#000' : 'var(--text-muted)',
-                    border: `1px solid ${row.done ? 'var(--success)' : 'var(--border)'}`,
-                  }}>✓</button>
-              </div>
-            ))}
-          </div>
-        ))}
+          );
+        })}
 
         {resting && <RestTimer start={90} onDismiss={() => setResting(false)} />}
+        {activeTimer && (
+          <RestTimer
+            start={activeTimer.seconds}
+            title={activeTimer.name}
+            showPresets={false}
+            onDismiss={() => setActiveTimer(null)}
+          />
+        )}
         {emom && <EmomTimer session={session} onClose={() => setEmom(false)} />}
       </div>
 
