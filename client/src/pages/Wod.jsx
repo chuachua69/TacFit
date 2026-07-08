@@ -33,23 +33,49 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
     borderColor = 'var(--danger)45';
     statusIcon = '🔴';
   } else if (done) {
-    if (log && log.totalSets > 0) {
-      const { doneCount = 0, totalSets = 0 } = log;
-      if (doneCount === totalSets) {
-        statusText = 'Completed';
-        statusColor = 'var(--success)'; // green
-        borderColor = 'var(--success)45';
-        statusIcon = '🟢';
-      } else if (doneCount > 0) {
+    if (log && log.exercises) {
+      let totalSets = 0;
+      let doneCount = 0;
+      let hasPartial = false;
+      let hasFail = false;
+
+      log.exercises.forEach(ex => {
+        ex.rows?.forEach(r => {
+          totalSets++;
+          if (r.done) {
+            doneCount++;
+            if (ex.kind !== 'check') {
+              const logged = r.reps ?? 0;
+              const target = r.targetReps ?? 0;
+              const isMax = target === 'max' || typeof target === 'string' || !target;
+              if (!isMax) {
+                if (logged === 0) hasFail = true;
+                else if (logged < target) hasPartial = true;
+              } else if (logged === 0) {
+                hasFail = true;
+              }
+            }
+          } else {
+            hasFail = true;
+          }
+        });
+      });
+
+      if (doneCount === 0) {
+        statusText = 'Failed (0 sets done)';
+        statusColor = 'var(--danger)';
+        borderColor = 'var(--danger)45';
+        statusIcon = '🔴';
+      } else if (hasFail || hasPartial || doneCount < totalSets) {
         statusText = `Partial (${doneCount}/${totalSets})`;
-        statusColor = 'var(--warn)'; // yellow
+        statusColor = 'var(--warn)';
         borderColor = 'var(--warn)45';
         statusIcon = '🟡';
       } else {
-        statusText = 'Failed (0 sets done)';
-        statusColor = 'var(--danger)'; // red
-        borderColor = 'var(--danger)45';
-        statusIcon = '🔴';
+        statusText = 'Completed';
+        statusColor = 'var(--success)';
+        borderColor = 'var(--success)45';
+        statusIcon = '🟢';
       }
     } else {
       statusText = 'Completed';

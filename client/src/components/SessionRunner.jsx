@@ -53,7 +53,7 @@ function initExercise(ex, profile, memory) {
   return {
     ...ex,
     rows: Array.from({ length: sets }, () => ({
-      weight: target, reps, rpe: null, done: false,
+      weight: target, reps, targetReps: reps, rpe: null, done: false,
     })),
   };
 }
@@ -247,19 +247,6 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                 {editingIdx !== ei && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{ex.scheme}</span>
-                    {duration !== null && (
-                      <button
-                        onClick={() => setActiveTimer({ name: ex.name, seconds: duration })}
-                        style={{
-                          fontSize: '0.7rem', padding: '3px 8px', borderRadius: 6,
-                          background: 'var(--accent)20', border: '1px solid var(--accent)50',
-                          color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        ⏱ Timer
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -284,6 +271,47 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
               {ex.rows.map((row, si) => {
                 const isMaxTime = /max\s*time/i.test(ex.scheme) || /max\s*time/i.test(ex.name);
                 const isTimeCheck = ex.kind === 'check' && duration !== null;
+
+                // Determine checkbox color based on logged performance vs target reps
+                let checkColor = 'var(--bg-elevated)';
+                let checkBorder = 'var(--border)';
+                let checkTextColor = 'var(--text-muted)';
+
+                if (row.done) {
+                  if (ex.kind === 'check') {
+                    checkColor = 'var(--success)';
+                    checkBorder = 'var(--success)';
+                    checkTextColor = '#000';
+                  } else {
+                    const loggedReps = row.reps ?? 0;
+                    const targetReps = row.targetReps ?? 0;
+                    const isMax = targetReps === 'max' || typeof targetReps === 'string' || !targetReps;
+                    if (isMax) {
+                      if (loggedReps > 0) {
+                        checkColor = 'var(--success)';
+                        checkBorder = 'var(--success)';
+                        checkTextColor = '#000';
+                      } else {
+                        checkColor = 'var(--danger)';
+                        checkBorder = 'var(--danger)';
+                        checkTextColor = '#fff';
+                      }
+                    } else if (loggedReps === 0) {
+                      checkColor = 'var(--danger)';
+                      checkBorder = 'var(--danger)';
+                      checkTextColor = '#fff';
+                    } else if (loggedReps < targetReps) {
+                      checkColor = 'var(--warn)'; // Yellow for incomplete/partial
+                      checkBorder = 'var(--warn)';
+                      checkTextColor = '#000';
+                    } else {
+                      checkColor = 'var(--success)'; // Green for target met
+                      checkBorder = 'var(--success)';
+                      checkTextColor = '#000';
+                    }
+                  }
+                }
+
                 return (
                   <div key={si} style={{
                     display: 'grid',
@@ -317,9 +345,9 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                       disabled={isTimeCheck}
                       style={{
                         width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
-                        background: row.done ? 'var(--success)' : 'var(--bg-elevated)',
-                        color: row.done ? '#000' : 'var(--text-muted)',
-                        border: `1px solid ${row.done ? 'var(--success)' : 'var(--border)'}`,
+                        background: checkColor,
+                        color: checkTextColor,
+                        border: `1px solid ${checkBorder}`,
                         opacity: isTimeCheck && !row.done ? 0.35 : 1,
                         cursor: isTimeCheck ? 'default' : 'pointer',
                       }}>✓</button>

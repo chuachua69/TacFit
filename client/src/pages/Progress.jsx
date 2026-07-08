@@ -227,61 +227,41 @@ export default function Progress() {
         </div>
       )}
 
-      {/* Exercise Progress Accordion */}
+      {/* Exercise Progress Summary */}
       <div>
         <div className="label">Exercise Progress (Personal Bests)</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {Object.keys(exerciseProgress).length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem', fontSize: '0.85rem' }}>
-              No exercise progress logged yet. Complete workouts in the WOD tab to track your progress here.
-            </div>
-          ) : (
-            Object.entries(exerciseProgress).sort((a, b) => a[0].localeCompare(b[0])).map(([name, progress]) => {
-              const isOpen = !!expandedEx[name];
+        {Object.keys(exerciseProgress).length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem', fontSize: '0.85rem' }}>
+            No exercise progress logged yet. Complete workouts in the WOD tab to track your progress here.
+          </div>
+        ) : (
+          <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', flexDirection: 'column' }}>
+            {Object.entries(exerciseProgress).sort((a, b) => a[0].localeCompare(b[0])).map(([name, progress], idx) => {
+              const bests = [];
+              if (progress.maxWeight > 0) bests.push(`${progress.maxWeight}${profile.unit || 'kg'}`);
+              if (progress.maxTime > 0) bests.push(`${progress.maxTime}s`);
+              if (progress.maxReps > 0) bests.push(`${progress.maxReps} reps`);
+              const bestText = bests.join(' · ') || '✓ Done';
+
               return (
-                <div key={name} className="card" style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div role="button" onClick={() => toggleEx(name)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{progress.totalLogs} workout(s)</span>
-                      <span style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', fontSize: '0.8rem', color: 'var(--accent)' }}>▼</span>
-                    </div>
+                <div key={name} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.65rem 0',
+                  borderBottom: idx === Object.keys(exerciseProgress).length - 1 ? 'none' : '1px solid var(--border)'
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.86rem' }}>{name}</div>
+                  <div style={{
+                    fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent)',
+                    background: 'var(--accent)18', border: '1px solid var(--accent)35',
+                    padding: '2px 8px', borderRadius: 6
+                  }}>
+                    {bestText}
                   </div>
-                  {isOpen && (
-                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {progress.maxWeight > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                          <span style={{ color: 'var(--text-dim)' }}>Highest Weight Moved:</span>
-                          <strong style={{ color: 'var(--accent)' }}>{progress.maxWeight}{profile.unit || 'kg'}</strong>
-                        </div>
-                      )}
-                      {progress.maxTime > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                          <span style={{ color: 'var(--text-dim)' }}>Longest Time Held:</span>
-                          <strong style={{ color: 'var(--accent)' }}>{progress.maxTime}s</strong>
-                        </div>
-                      )}
-                      {progress.maxReps > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                          <span style={{ color: 'var(--text-dim)' }}>Max Reps Performed:</span>
-                          <strong style={{ color: 'var(--accent)' }}>{progress.maxReps} reps</strong>
-                        </div>
-                      )}
-                      {progress.maxWeight === 0 && progress.maxTime === 0 && progress.maxReps === 0 && (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                          Completed as checkmark.
-                        </div>
-                      )}
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: 4 }}>
-                        Based on {progress.totalLogs} logged workout(s)
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </div>
 
       {/* Assessment attempt history */}
