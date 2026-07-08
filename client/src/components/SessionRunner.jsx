@@ -124,10 +124,40 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
         )}
 
         {/* Exercises */}
-        {exercises.map((ex, ei) => {
-          const duration = getSchemeDuration(ex.scheme);
-          return (
-            <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '1rem' }}>
+        {session.emom ? (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '1.25rem' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--accent)', borderBottom: '1px solid var(--border)', paddingBottom: '0.6rem', marginBottom: '0.2rem' }}>
+              📋 EMOM Exercises Reference
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {exercises.map((ex, ei) => (
+                <div key={ei} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '0.25rem 0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ex.name}
+                    </span>
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Watch video demonstration"
+                      style={{ fontSize: '1rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                    >
+                      📺
+                    </a>
+                  </div>
+                  <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+                    {ex.scheme}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          exercises.map((ex, ei) => {
+            const duration = getSchemeDuration(ex.scheme);
+            return (
+              <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 {editingIdx === ei ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
@@ -254,9 +284,10 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                   </div>
                 );
               })}
-            </div>
-          );
-        })}
+              </div>
+            );
+          })
+        )}
 
         {resting && <RestTimer start={90} onDismiss={() => setResting(false)} />}
         {activeTimer && (
@@ -284,14 +315,27 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
             }}
           />
         )}
-        {emom && <EmomTimer session={session} onClose={() => setEmom(false)} />}
+        {emom && (
+          <EmomTimer
+            session={session}
+            onClose={(wasFinished) => {
+              if (wasFinished) {
+                setExercises(prev => prev.map(ex => ({
+                  ...ex,
+                  rows: ex.rows.map(r => ({ ...r, done: true }))
+                })));
+              }
+              setEmom(false);
+            }}
+          />
+        )}
       </div>
 
       {/* Sticky footer */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg-card)', borderTop: '1px solid var(--border)', padding: `0.85rem 1.25rem calc(0.85rem + env(safe-area-inset-bottom))`, display: 'flex', gap: 8, maxWidth: 480, margin: '0 auto' }}>
         <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.75rem 1rem' }} onClick={() => setResting(true)}>⏱ Rest</button>
         <button className="btn btn-primary" style={{ flex: 1 }} onClick={complete}>
-          Complete Session · {doneCount}/{totalSets}
+          {session.emom ? 'Complete Session ✓' : `Complete Session · ${doneCount}/${totalSets}`}
         </button>
       </div>
     </div>

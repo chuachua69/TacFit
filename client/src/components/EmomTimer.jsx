@@ -64,7 +64,7 @@ export default function EmomTimer({ session, onClose }) {
 
   useEffect(() => () => { stop(); stopAlarm(); }, [stop]);
   useEffect(() => pushGuard(), []);
-  const close = () => { stopAlarm(); onClose(); };
+  const close = () => { stopAlarm(); onClose(finished); };
 
   const phase = phases[idx];
   const mins = Math.floor(remaining / 60), secs = remaining % 60;
