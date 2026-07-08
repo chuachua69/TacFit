@@ -137,9 +137,9 @@ export default function ActiveSetTimer({ name, duration, isMaxTime, onDone, onCl
         {phase === 'work' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             {isMaxTime ? (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Hanging... Tap finished when you drop!</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Tap finish when completed!</div>
             ) : (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Plank duration: {duration}s</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Target: {formatTime(duration)}</div>
             )}
           </div>
         )}
