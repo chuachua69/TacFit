@@ -199,6 +199,19 @@ export default function Wod() {
   const [, setRefresh] = useState(0);
   const bump = () => setRefresh(r => r + 1);
 
+  const toDateInput = (d) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const getNextMonday = () => {
+    const d = new Date();
+    const delta = (8 - d.getDay()) % 7;
+    d.setDate(d.getDate() + delta);
+    return d;
+  };
+
+  const [startDateInput, setStartDateInput] = useState(toDateInput(new Date()));
+
   const openRunner = (session, dayKey, date) => {
     // Recovery check: warn (never block) if this session hits muscles that
     // are still inside their recovery window from recent logged work.
@@ -224,6 +237,62 @@ export default function Wod() {
   };
 
   const profile = store.getProfile();
+
+  if (!profile.programStartDate) {
+    const todayStr = toDateInput(new Date());
+    const mondayStr = toDateInput(getNextMonday());
+
+    return (
+      <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', justifyContent: 'center', gap: '1.5rem' }}>
+        <PageHeader title="WOD" subtitle="Tactical Training Program" />
+        <div className="card" style={{ maxWidth: 460, margin: '0.85rem auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '0.25rem' }}>🚀</div>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: 0 }}>Start 6-Week Progression</h2>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.86rem', lineHeight: 1.6, textAlign: 'center', margin: 0 }}>
+            This application is highly specialized for a structured 6-week periodization block. Select your program start date to begin tracking workouts.
+          </p>
+
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+            <div className="label">Choose Start Date</div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
+              <button
+                className="btn"
+                style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
+                  background: startDateInput === todayStr ? 'var(--accent)' : 'var(--bg-elevated)',
+                  color: startDateInput === todayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
+                onClick={() => setStartDateInput(todayStr)}>
+                Today
+              </button>
+              <button
+                className="btn"
+                style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
+                  background: startDateInput === mondayStr ? 'var(--accent)' : 'var(--bg-elevated)',
+                  color: startDateInput === mondayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
+                onClick={() => setStartDateInput(mondayStr)}>
+                Next Monday
+              </button>
+            </div>
+            <input type="date" value={startDateInput} min={todayStr}
+              onChange={e => setStartDateInput(e.target.value)}
+              style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.4, margin: 0 }}>
+              The program runs Monday to Saturday, so a Monday start aligns cleanest with your weekly cycle.
+            </p>
+          </div>
+
+          <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontWeight: 800, fontSize: '0.92rem', marginTop: '0.5rem' }}
+            onClick={() => {
+              const start = new Date(`${startDateInput}T12:00:00`);
+              store.setProfile({ programStartDate: start.toISOString() });
+              bump();
+            }}>
+            Initialize 6-Week Block
+          </button>
+        </div>
+        <BottomNav active="wod" />
+      </div>
+    );
+  }
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>

@@ -41,7 +41,16 @@ const ALL_EXERCISES = [
   'Hanging Leg Raises', 'Dynamic Warm-up', 'Loaded 25m Shuttles', 'Sled Push (Heavy)',
   'Weighted Plank', 'Dead Hang', "Farmer's Carry", 'Min 1 — Hip to Overhead',
   'Min 2 — Walking Lunges', 'Min 3 — Bench Press', 'Min 4 — Pull-Ups', 'Min 5 — Rest',
-  'Kipping Pull-Up Practice', 'Bicep Curls', 'Hammer Curls'
+  'Kipping Pull-Up Practice', 'Bicep Curls', 'Hammer Curls',
+  
+  // Extended Database
+  'Dumbbell Bench Press', 'Push-Up', 'Dumbbell Chest Fly', 'Barbell Row',
+  'Lat Pulldown', 'Cable Seated Row', 'Inverted Row', 'Dumbbell Shoulder Press',
+  'Cable Lateral Raise', 'Leg Press', 'Goblet Squat', 'Bulgarian Split Squat',
+  'Leg Extension', 'Dumbbell Romanian Deadlift', 'Lying Leg Curl',
+  'Barbell Hip Thrust', 'Preacher Curl', 'Cable Bicep Curl',
+  'Overhead Tricep Extension', 'Skull Crusher', 'Ab Wheel Rollout',
+  'Kettlebell Swing', 'Burpee'
 ].sort();
 
 // Build initial set rows for an exercise from its scheme + weight memory.
