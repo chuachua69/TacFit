@@ -9,7 +9,6 @@ const ITEMS = [
   { icon: '📚', label: 'Exercise Library', sub: 'Catalog, recovery status, custom exercises', path: '/exercises' },
   { icon: '🗓️', label: 'Workout History', sub: 'Everything you\'ve logged', path: '/history' },
   { icon: '👤', label: 'Profile', sub: 'Account & program', path: '/profile' },
-  { icon: '⚙️', label: 'Settings', sub: 'Loads, lifts, sound', path: '/settings' },
 ];
 
 /**
