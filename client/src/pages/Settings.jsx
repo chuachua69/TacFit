@@ -249,18 +249,7 @@ export default function Settings() {
       <button className="btn btn-ghost" style={{ color: 'var(--danger)' }}
         onClick={() => {
           if (window.confirm("Are you sure you want to reset the app? This will permanently delete your workout history, attempts, and progression start date. Your personal lift 1RMs and weight specs will be kept.")) {
-            const resetProfile = {
-              ...DEFAULT_PROFILE,
-              setupComplete: true,
-              oneRMs: { ...profile.oneRMs },
-              bodyweight: profile.bodyweight,
-              loadClass: profile.loadClass,
-              externalLoad: profile.externalLoad,
-              unit: profile.unit,
-            };
-            store.setProfile(resetProfile);
-            const keysToClear = ['tac5_attempts', 'tac5_events', 'tac5_wod', 'tac5_exmem'];
-            keysToClear.forEach(k => localStorage.removeItem(k));
+            store.resetAppButKeepLifts();
             window.location.reload();
           }
         }}>

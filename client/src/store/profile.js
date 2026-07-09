@@ -159,4 +159,22 @@ export const store = {
     syncToSupabase();
     return mem;
   },
+  resetAppButKeepLifts() {
+    const current = store.getProfile();
+    const resetProfile = {
+      ...DEFAULT_PROFILE,
+      setupComplete: true,
+      oneRMs: { ...current.oneRMs },
+      bodyweight: current.bodyweight,
+      loadClass: current.loadClass,
+      externalLoad: current.externalLoad,
+      unit: current.unit,
+    };
+    localStorage.setItem(KEYS.PROFILE, JSON.stringify(resetProfile));
+    localStorage.removeItem(KEYS.ATTEMPTS);
+    localStorage.removeItem(KEYS.EVENTS);
+    localStorage.removeItem(KEYS.WOD);
+    localStorage.removeItem(KEYS.EXMEM);
+    syncToSupabase();
+  }
 };
