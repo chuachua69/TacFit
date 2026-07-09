@@ -50,8 +50,94 @@ const ALL_EXERCISES = [
   'Leg Extension', 'Dumbbell Romanian Deadlift', 'Lying Leg Curl',
   'Barbell Hip Thrust', 'Preacher Curl', 'Cable Bicep Curl',
   'Overhead Tricep Extension', 'Skull Crusher', 'Ab Wheel Rollout',
-  'Kettlebell Swing', 'Burpee'
+  'Kettlebell Swing', 'Burpee',
+  'Zercher Squat', 'Zercher Carry', 'Zercher Deadlift',
+  'Sandbag Bear Hug Carry', 'Kettlebell Snatch', 'Kettlebell Goblet Carry',
+  'Kettlebell Suitcase Carry'
 ].sort();
+
+function getProgressionPercentageForLift(liftKey, profile) {
+  if (!profile.programStartDate) return 0.75;
+  const start = new Date(profile.programStartDate);
+  const now = new Date();
+  const diffTime = Math.abs(now - start);
+  const calendarWeek = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
+  
+  const logs = store.getWodLogs();
+  const skippedCount = logs.filter(w => w.status === 'skipped' && w.lifts && w.lifts.includes(liftKey)).length;
+  
+  const week = Math.min(Math.max(calendarWeek - skippedCount, 1), 6);
+  return 0.60 + (week * 0.05); // Week 1 = 65% ...
+}
+
+function getBaselineWeight(name, profile, memory) {
+  if (memory && memory[name] != null && memory[name] > 0) {
+    return memory[name];
+  }
+
+  const n = name.toLowerCase();
+
+  // Squats
+  if (n.includes('squat')) {
+    const oneRM = profile.oneRMs?.squat || 0;
+    const pct = getProgressionPercentageForLift('squat', profile);
+    return round(oneRM * pct);
+  }
+
+  // Deadlift / RDL / Hinge
+  if (n.includes('deadlift') || n.includes('rdl')) {
+    const oneRM = profile.oneRMs?.deadlift || 0;
+    const pct = getProgressionPercentageForLift('deadlift', profile);
+    return round(oneRM * pct);
+  }
+
+  // Bench Press / Bench
+  if (n.includes('bench press') || n.includes('bench')) {
+    if (n.includes('bodyweight')) {
+      return profile.bodyweight || 77;
+    }
+    const oneRM = profile.oneRMs?.bench || 0;
+    const pct = getProgressionPercentageForLift('bench', profile);
+    return round(oneRM * pct);
+  }
+
+  // Overhead Press / Shoulder press
+  if (n.includes('press')) {
+    const oneRM = profile.oneRMs?.press || 0;
+    const pct = getProgressionPercentageForLift('press', profile);
+    return round(oneRM * pct);
+  }
+
+  // Pull-Ups, Shuttles, Planks
+  if (n.includes('pull-up') || n.includes('pullup') || n.includes('shuttle') || n.includes('plank')) {
+    if (n.includes('weighted')) {
+      return profile.externalLoad || 10;
+    }
+    if (n.includes('bodyweight') || n.includes('strict')) {
+      return profile.bodyweight || 77;
+    }
+  }
+
+  // Lunges / Overheads / Sandbags
+  if (n.includes('lunge') || n.includes('overhead') || n.includes('sandbag') || n.includes('clean') || n.includes('sled')) {
+    if (n.includes('sled')) {
+      return round((profile.bodyweight || 77) * 1.5);
+    }
+    return profile.loadClass || 40;
+  }
+
+  // Carries
+  if (n.includes('carry')) {
+    return profile.loadClass || 40;
+  }
+
+  // Accessories / Db curls / rows / skullcrusher / bicep / tricep / swing / snatch / burpee / flies
+  if (n.includes('curl') || n.includes('row') || n.includes('extension') || n.includes('raise') || n.includes('pushdown') || n.includes('snatch') || n.includes('swing') || n.includes('fly')) {
+    return profile.externalLoad || 10;
+  }
+
+  return null;
+}
 
 // Build initial set rows for an exercise from its scheme + weight memory.
 function initExercise(ex, profile, memory) {
@@ -63,7 +149,7 @@ function initExercise(ex, profile, memory) {
     } else if (ex.targetPct && profile.bodyweight) {
       target = round(profile.bodyweight * ex.targetPct);
     } else {
-      target = memory[ex.name] || null;
+      target = getBaselineWeight(ex.name, profile, memory);
     }
   }
   return {
@@ -216,7 +302,20 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                       value={ex.name}
                       onChange={e => {
                         const val = e.target.value;
-                        setExercises(prev => prev.map((item, idx) => idx !== ei ? item : { ...item, name: val }));
+                        setExercises(prev => prev.map((item, idx) => {
+                          if (idx !== ei) return item;
+                          const isCheck = /hang|plank|warm-up|warmup|stretch|rotations|switches|roll/i.test(val);
+                          const isReps = /max reps|pull-ups \(bodyweight\)|bodyweight pull-ups|leg raise/i.test(val);
+                          const kind = isCheck ? 'check' : (isReps ? 'reps' : 'weight');
+                          const updatedInfo = {
+                            ...item,
+                            name: val,
+                            kind,
+                            targetWeight: undefined,
+                            targetPct: undefined
+                          };
+                          return initExercise(updatedInfo, profile, store.getExMemory());
+                        }));
                         setEditingIdx(null);
                       }}
                       style={{
