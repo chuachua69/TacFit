@@ -139,11 +139,17 @@ function getBaselineWeight(name, profile, memory) {
   return null;
 }
 
+function exerciseHasWeight(ex, profile, memory) {
+  if (getBaselineWeight(ex.name, profile, memory) !== null) return true;
+  return /weighted|load|kg|lbs|plate|vest|db|kb|barbell|dumbbell|kettlebell|sandbag|bag|sled|zercher|farmer/i.test(ex.name) || /weighted|load|kg|lbs|plate|vest|db|kb|barbell|dumbbell|kettlebell|sandbag|bag|sled|zercher|farmer/i.test(ex.note || '');
+}
+
 // Build initial set rows for an exercise from its scheme + weight memory.
 function initExercise(ex, profile, memory) {
   const { sets, reps } = parseScheme(ex.scheme);
+  const hasWeight = exerciseHasWeight(ex, profile, memory);
   let target = null;
-  if (ex.kind === 'weight') {
+  if (hasWeight) {
     if (ex.targetWeight != null && ex.targetWeight > 0) {
       target = ex.targetWeight;
     } else if (ex.targetPct && profile.bodyweight) {
@@ -294,7 +300,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
           exercises.map((ex, ei) => {
             const duration = getSchemeDuration(ex.scheme);
             return (
-              <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '1rem' }}>
+              <div key={ei} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 {editingIdx === ei ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
@@ -346,8 +352,8 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                    <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.25 }}>{ex.name}</span>
                     <a
                       href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name)}`}
                       target="_blank"
@@ -382,105 +388,132 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                 <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>🎯 Target ≈ {round(profile.bodyweight * ex.targetPct)} {unit}</div>
               )}
 
-              {/* Column headers */}
-              {ex.kind !== 'check' && (
-                <div style={{ display: 'grid', gridTemplateColumns: ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px', gap: 8, fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, padding: '0 2px' }}>
-                  <span>Set</span>
-                  {ex.kind === 'weight' && <span style={{ textAlign: 'center' }}>{unit}</span>}
-                  <span style={{ textAlign: 'center' }}>Reps</span>
-                  <span style={{ textAlign: 'center' }}>RPE</span>
-                  <span />
-                </div>
-              )}
-
-              {/* Set rows */}
-              {ex.rows.map((row, si) => {
-                const isMaxTime = /max\s*time/i.test(ex.scheme) || /max\s*time/i.test(ex.name);
-                const isTimeCheck = ex.kind === 'check' && duration !== null;
-                const canToggle = !isTimeCheck || row.done;
-
-                // Determine checkbox color based on logged performance vs target reps
-                let checkColor = 'var(--bg-elevated)';
-                let checkBorder = 'var(--border)';
-                let checkTextColor = 'var(--text-muted)';
-
-                if (row.done) {
-                  if (ex.kind === 'check') {
-                    checkColor = 'var(--success)';
-                    checkBorder = 'var(--success)';
-                    checkTextColor = '#000';
-                  } else {
-                    const loggedReps = row.reps ?? 0;
-                    const targetReps = row.targetReps ?? 0;
-                    const isMax = targetReps === 'max' || typeof targetReps === 'string' || !targetReps;
-                    if (isMax) {
-                      if (loggedReps > 0) {
-                        checkColor = 'var(--success)';
-                        checkBorder = 'var(--success)';
-                        checkTextColor = '#000';
-                      } else {
-                        checkColor = 'var(--danger)';
-                        checkBorder = 'var(--danger)';
-                        checkTextColor = '#fff';
-                      }
-                    } else if (loggedReps === 0) {
-                      checkColor = 'var(--danger)';
-                      checkBorder = 'var(--danger)';
-                      checkTextColor = '#fff';
-                    } else if (loggedReps < targetReps) {
-                      checkColor = 'var(--warn)'; // Yellow for incomplete/partial
-                      checkBorder = 'var(--warn)';
-                      checkTextColor = '#000';
-                    } else {
-                      checkColor = 'var(--success)'; // Green for target met
-                      checkBorder = 'var(--success)';
-                      checkTextColor = '#000';
-                    }
-                  }
+              {/* Dynamic Columns Configuration */}
+              {(() => {
+                const hasWeight = exerciseHasWeight(ex, profile, store.getExMemory());
+                
+                // Define grid template columns dynamically
+                let gridTemplate = '28px 1fr 40px';
+                if (ex.kind === 'check') {
+                  gridTemplate = hasWeight ? '28px 1.5fr 70px 40px' : '28px 1fr 40px';
+                } else {
+                  gridTemplate = hasWeight ? '28px 1.2fr 1.2fr 1fr 40px' : '28px 1.2fr 1fr 40px';
                 }
 
                 return (
-                  <div key={si} style={{
-                    display: 'grid',
-                    gridTemplateColumns: ex.kind === 'check' ? '28px 1fr 40px' : ex.kind === 'weight' ? '28px 1fr 1fr 1fr 40px' : '28px 1fr 1fr 40px',
-                    gap: 8, alignItems: 'center', opacity: row.done ? 0.55 : 1,
-                  }}>
-                    <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{si + 1}</span>
-                    {ex.kind === 'check' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', width: '100%' }}>
-                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: row.timeLogged ? 700 : 400 }}>
-                          {row.timeLogged ? `⏱ Completed (${row.timeLogged}s)` : ex.scheme}
-                        </span>
-                        {duration !== null && !row.done && (
-                          <button
-                            onClick={() => setActiveSetTimer({ ei, si, name: ex.name, duration, isMaxTime })}
-                            style={{
-                              fontSize: '0.72rem', padding: '3px 8px', borderRadius: 6,
-                              background: 'var(--accent)20', border: '1px solid var(--accent)50',
-                              color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', flexShrink: 0
-                            }}
-                          >
-                            ⏱ Timer
-                          </button>
-                        )}
+                  <>
+                    {/* Headers */}
+                    {ex.kind !== 'check' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, gap: 10, fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, padding: '0 2px' }}>
+                        <span>Set</span>
+                        {hasWeight && <span style={{ textAlign: 'center' }}>{unit}</span>}
+                        <span style={{ textAlign: 'center' }}>Reps</span>
+                        <span style={{ textAlign: 'center' }}>RPE</span>
+                        <span />
                       </div>
                     )}
-                    {ex.kind === 'weight' && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
-                    {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
-                    {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
-                    <button onClick={canToggle ? () => toggleDone(ei, si) : undefined} aria-label="toggle set done"
-                      disabled={!canToggle}
-                      style={{
-                        width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
-                        background: checkColor,
-                        color: checkTextColor,
-                        border: `1px solid ${checkBorder}`,
-                        opacity: !canToggle ? 0.35 : 1,
-                        cursor: canToggle ? 'pointer' : 'default',
-                      }}>✓</button>
-                  </div>
+                    {ex.kind === 'check' && hasWeight && (
+                      <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, gap: 10, fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, padding: '0 2px' }}>
+                        <span>Set</span>
+                        <span>Movement</span>
+                        <span style={{ textAlign: 'center' }}>{unit}</span>
+                        <span />
+                      </div>
+                    )}
+
+                    {/* Set rows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {ex.rows.map((row, si) => {
+                        const isMaxTime = /max\s*time/i.test(ex.scheme) || /max\s*time/i.test(ex.name);
+                        const isTimeCheck = ex.kind === 'check' && duration !== null;
+                        const canToggle = !isTimeCheck || row.done;
+
+                        // Determine checkbox color based on logged performance vs target reps
+                        let checkColor = 'var(--bg-elevated)';
+                        let checkBorder = 'var(--border)';
+                        let checkTextColor = 'var(--text-muted)';
+
+                        if (row.done) {
+                          if (ex.kind === 'check') {
+                            checkColor = 'var(--success)';
+                            checkBorder = 'var(--success)';
+                            checkTextColor = '#000';
+                          } else {
+                            const loggedReps = row.reps ?? 0;
+                            const targetReps = row.targetReps ?? 0;
+                            const isMax = targetReps === 'max' || typeof targetReps === 'string' || !targetReps;
+                            if (isMax) {
+                              if (loggedReps > 0) {
+                                checkColor = 'var(--success)';
+                                checkBorder = 'var(--success)';
+                                checkTextColor = '#000';
+                              } else {
+                                checkColor = 'var(--danger)';
+                                checkBorder = 'var(--danger)';
+                                checkTextColor = '#fff';
+                              }
+                            } else if (loggedReps === 0) {
+                              checkColor = 'var(--danger)';
+                              checkBorder = 'var(--danger)';
+                              checkTextColor = '#fff';
+                            } else if (loggedReps < targetReps) {
+                              checkColor = 'var(--warn)';
+                              checkBorder = 'var(--warn)';
+                              checkTextColor = '#000';
+                            } else {
+                              checkColor = 'var(--success)';
+                              checkBorder = 'var(--success)';
+                              checkTextColor = '#000';
+                            }
+                          }
+                        }
+
+                        return (
+                          <div key={si} style={{
+                            display: 'grid',
+                            gridTemplateColumns: gridTemplate,
+                            gap: 10, alignItems: 'center', opacity: row.done ? 0.55 : 1,
+                          }}>
+                            <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>{si + 1}</span>
+                            {ex.kind === 'check' && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', width: '100%', minWidth: 0 }}>
+                                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: row.timeLogged ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {row.timeLogged ? `Completed (${row.timeLogged}s)` : ex.scheme}
+                                </span>
+                                {duration !== null && !row.done && (
+                                  <button
+                                    onClick={() => setActiveSetTimer({ ei, si, name: ex.name, duration, isMaxTime })}
+                                    style={{
+                                      fontSize: '0.72rem', padding: '3px 8px', borderRadius: 6,
+                                      background: 'var(--accent)20', border: '1px solid var(--accent)50',
+                                      color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', flexShrink: 0
+                                    }}
+                                  >
+                                    ⏱ Timer
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {hasWeight && <NumCell value={row.weight} onChange={v => update(ei, si, 'weight', v)} placeholder="0" />}
+                            {ex.kind !== 'check' && <NumCell value={row.reps} onChange={v => update(ei, si, 'reps', v)} placeholder={ex.kind === 'reps' ? 'max' : '0'} />}
+                            {ex.kind !== 'check' && <NumCell value={row.rpe} onChange={v => update(ei, si, 'rpe', v)} placeholder="–" />}
+                            <button onClick={canToggle ? () => toggleDone(ei, si) : undefined} aria-label="toggle set done"
+                              disabled={!canToggle}
+                              style={{
+                                width: 34, height: 34, borderRadius: 8, fontSize: '1rem', fontWeight: 800,
+                                background: checkColor,
+                                color: checkTextColor,
+                                border: `1px solid ${checkBorder}`,
+                                opacity: !canToggle ? 0.35 : 1,
+                                cursor: canToggle ? 'pointer' : 'default',
+                              }}>✓</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 );
-              })}
+              })()}
               </div>
             );
           })
