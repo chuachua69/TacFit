@@ -203,7 +203,14 @@ export default function Settings() {
         </div>
       </details>
 
-      <button className="btn btn-secondary" onClick={() => window.location.href = 'mailto:support@tacfit.app'}>
+      <button className="btn btn-secondary"
+        onClick={() => {
+          const subject = encodeURIComponent("TacFit App Feedback & Suggestions");
+          const body = encodeURIComponent(
+            "Hi TacFit Team,\n\nHere is my feedback on the app:\n\n1. What I like:\n\n2. What could be improved:\n\n3. Bugs/issues encountered:\n\nApp Info:\n- Platform: " + navigator.userAgent + "\n- Version: 1.3.0"
+          );
+          window.location.href = `mailto:support@tacfit.app?subject=${subject}&body=${body}`;
+        }}>
         Submit Feedback
       </button>
 

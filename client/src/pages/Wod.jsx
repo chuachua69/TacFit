@@ -211,6 +211,9 @@ export default function Wod() {
   };
 
   const [startDateInput, setStartDateInput] = useState(toDateInput(new Date()));
+  const [wizardStep, setWizardStep] = useState(0); // 0: Select Days, 1: Assign Types, 2: Start Date
+  const [runDays, setRunDays] = useState(['tue', 'sat']);
+  const [runTypes, setRunTypes] = useState({ tue: 'intervals', sat: 'zone2' });
 
   const openRunner = (session, dayKey, date) => {
     // Recovery check: warn (never block) if this session hits muscles that
@@ -245,49 +248,153 @@ export default function Wod() {
     return (
       <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', justifyContent: 'center', gap: '1.5rem' }}>
         <PageHeader title="WOD" subtitle="Tactical Training Program" />
-        <div className="card" style={{ maxWidth: 460, margin: '0.85rem auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '0.25rem' }}>🚀</div>
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: 0 }}>Start 6-Week Progression</h2>
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.86rem', lineHeight: 1.6, textAlign: 'center', margin: 0 }}>
-            This application is highly specialized for a structured 6-week periodization block. Select your program start date to begin tracking workouts.
-          </p>
+        <div className="card" style={{ maxWidth: 460, margin: '0.85rem auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+          
+          {wizardStep === 0 && (
+            <>
+              <div style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '0.25rem' }}>🏃</div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: 0 }}>Select Running Days</h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', lineHeight: 1.5, textAlign: 'center', margin: 0 }}>
+                Toggle the days you want to schedule runs. Your remaining core training blocks (Lifts, EMOMs, Conditioning) will distribute around them.
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '0.5rem 0' }}>
+                {[['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']].map(([key, name]) => {
+                  const active = runDays.includes(key);
+                  return (
+                    <button key={key}
+                      onClick={() => {
+                        if (active) {
+                          setRunDays(runDays.filter(d => d !== key));
+                          const newTypes = { ...runTypes };
+                          delete newTypes[key];
+                          setRunTypes(newTypes);
+                        } else {
+                          setRunDays([...runDays, key]);
+                          setRunTypes({ ...runTypes, [key]: 'easy' }); // default to easy run
+                        }
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '0.8rem 1rem', borderRadius: 'var(--radius)',
+                        background: active ? 'var(--accent)12' : 'var(--bg-elevated)',
+                        border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                        color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
+                      }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{name}</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: active ? 'var(--accent)' : 'var(--text-muted)' }}>
+                        {active ? '🏃 Run Day' : '😴 Rest / Core Block'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-            <div className="label">Choose Start Date</div>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
-              <button
-                className="btn"
-                style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
-                  background: startDateInput === todayStr ? 'var(--accent)' : 'var(--bg-elevated)',
-                  color: startDateInput === todayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
-                onClick={() => setStartDateInput(todayStr)}>
-                Today
+              <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontWeight: 800 }}
+                disabled={runDays.length === 0}
+                onClick={() => setWizardStep(1)}>
+                Next: Assign Run Types →
               </button>
-              <button
-                className="btn"
-                style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
-                  background: startDateInput === mondayStr ? 'var(--accent)' : 'var(--bg-elevated)',
-                  color: startDateInput === mondayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
-                onClick={() => setStartDateInput(mondayStr)}>
-                Next Monday
-              </button>
-            </div>
-            <input type="date" value={startDateInput} min={todayStr}
-              onChange={e => setStartDateInput(e.target.value)}
-              style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.4, margin: 0 }}>
-              The program runs Monday to Saturday, so a Monday start aligns cleanest with your weekly cycle.
-            </p>
-          </div>
+            </>
+          )}
 
-          <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontWeight: 800, fontSize: '0.92rem', marginTop: '0.5rem' }}
-            onClick={() => {
-              const start = new Date(`${startDateInput}T12:00:00`);
-              store.setProfile({ programStartDate: start.toISOString() });
-              bump();
-            }}>
-            Initialize 6-Week Block
-          </button>
+          {wizardStep === 1 && (
+            <>
+              <div style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '0.25rem' }}>⏱️</div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: 0 }}>Assign Run Types</h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', lineHeight: 1.5, textAlign: 'center', margin: 0 }}>
+                Specify which run sessions you plan to perform on each selected running day.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, margin: '0.5rem 0' }}>
+                {runDays.map(day => (
+                  <div key={day} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div className="label" style={{ textTransform: 'capitalize' }}>{DAY_LABEL[day]} Run</div>
+                    <select
+                      value={runTypes[day] || 'easy'}
+                      onChange={e => setRunTypes({ ...runTypes, [day]: e.target.value })}
+                      style={{
+                        width: '100%', padding: '0.6rem',
+                        background: 'var(--bg-elevated)', color: 'var(--text)',
+                        border: '1px solid var(--border)', borderRadius: 'var(--radius)'
+                      }}>
+                      <option value="intervals">Hard Running (Intervals/Tempo)</option>
+                      <option value="zone2">Long Aerobic Run (Zone 2)</option>
+                      <option value="easy">Easy Recovery Run (Zone 1/2)</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setWizardStep(0)}>
+                  ← Back
+                </button>
+                <button className="btn btn-primary" style={{ flex: 2, fontWeight: 800 }} onClick={() => setWizardStep(2)}>
+                  Next: Choose Start Date →
+                </button>
+              </div>
+            </>
+          )}
+
+          {wizardStep === 2 && (
+            <>
+              <div style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '0.25rem' }}>🚀</div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: 0 }}>Start 6-Week Progression</h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', lineHeight: 1.5, textAlign: 'center', margin: 0 }}>
+                Choose your program start date to initialize the periodization training cycle.
+              </p>
+
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                <div className="label">Choose Start Date</div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                  <button
+                    className="btn"
+                    style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
+                      background: startDateInput === todayStr ? 'var(--accent)' : 'var(--bg-elevated)',
+                      color: startDateInput === todayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
+                    onClick={() => setStartDateInput(todayStr)}>
+                    Today
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
+                      background: startDateInput === mondayStr ? 'var(--accent)' : 'var(--bg-elevated)',
+                      color: startDateInput === mondayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
+                    onClick={() => setStartDateInput(mondayStr)}>
+                    Next Monday
+                  </button>
+                </div>
+                <input type="date" value={startDateInput} min={todayStr}
+                  onChange={e => setStartDateInput(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.4, margin: 0 }}>
+                  A Monday start aligns cleanest with your weekly core training cycle.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setWizardStep(1)}>
+                  ← Back
+                </button>
+                <button className="btn btn-primary" style={{ flex: 2, fontWeight: 800 }}
+                  onClick={() => {
+                    const start = new Date(`${startDateInput}T12:00:00`);
+                    store.setProfile({
+                      programStartDate: start.toISOString(),
+                      customSchedule: {
+                        runDays,
+                        runTypes
+                      }
+                    });
+                    bump();
+                  }}>
+                  Initialize 6-Week Block 🚀
+                </button>
+              </div>
+            </>
+          )}
+
         </div>
         <BottomNav active="wod" />
       </div>
