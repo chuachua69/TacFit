@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import PageHeader from '../components/PageHeader';
 import PhaseTimer from '../components/PhaseTimer';
 import EventLogSheet from '../components/EventLogSheet';
 import { EVENTS, eventResult } from '../lib/scoring';
@@ -26,10 +27,7 @@ export default function Test() {
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
-      <div>
-        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>TEST</div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Full circuit or single events — both logged</div>
-      </div>
+      <PageHeader title="TEST" subtitle="Full circuit or single events — both logged" />
 
       {/* Full assessment */}
       <button id="tour-test" className="card" onClick={() => navigate('/assessment')}

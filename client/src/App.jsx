@@ -5,7 +5,11 @@ import Test from './pages/Test';
 import Calculator from './pages/Calculator';
 import Progress from './pages/Progress';
 import Settings from './pages/Settings';
+import Exercises from './pages/Exercises';
+import History from './pages/History';
+import Profile from './pages/Profile';
 import ReloadPrompt from './components/ReloadPrompt';
+import Drawer from './components/Drawer';
 import Auth from './components/Auth';
 import Onboarding from './pages/Onboarding';
 import { store } from './store/profile';
@@ -100,12 +104,16 @@ export default function App() {
     <HashRouter>
       <ReloadPrompt />
       <TourRunner />
+      <Drawer />
       <Routes>
         <Route path="/" element={<Wod />} />
         <Route path="/test" element={<Test />} />
         <Route path="/assessment" element={<Calculator />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/exercises" element={<Exercises />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

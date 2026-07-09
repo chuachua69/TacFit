@@ -73,7 +73,7 @@ function NumCell({ value, onChange, placeholder }) {
   );
 }
 
-export default function SessionRunner({ session, dayLabel, logId, profile, existing, onClose, onComplete }) {
+export default function SessionRunner({ session, dayLabel, logId, profile, existing, onClose, onComplete, warnings = [] }) {
   const memory = store.getExMemory();
   const [exercises, setExercises] = useState(() =>
     existing?.exercises?.length
@@ -131,6 +131,17 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
           </div>
           <button onClick={onClose} aria-label="Close" style={{ fontSize: '1.5rem', color: 'var(--text-muted)', lineHeight: 1, padding: '0 0.25rem' }}>✕</button>
         </div>
+
+        {/* Recovery warnings — advisory, never a hard block */}
+        {warnings.length > 0 && (
+          <div className="card" style={{ border: '1px solid var(--warn, #e2b53e)', display: 'flex', flexDirection: 'column', gap: 6, padding: '0.8rem 1rem' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--warn, #e2b53e)' }}>⚠️ Recovery check</div>
+            {warnings.map((w, i) => (
+              <div key={i} style={{ fontSize: '0.74rem', color: 'var(--text-dim)', lineHeight: 1.45 }}>{w}</div>
+            ))}
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Your call — scale the load down or swap the flagged movement if you're feeling it.</div>
+          </div>
+        )}
 
         {session.emom && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

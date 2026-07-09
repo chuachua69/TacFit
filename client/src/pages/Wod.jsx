@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
+import PageHeader from '../components/PageHeader';
 import SessionRunner from '../components/SessionRunner';
 import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount, fxUncount } from '../lib/feedback';
+import { historyFromWodLogs, evaluateSession } from '../lib/recovery';
+import { logSessionToCloud } from '../lib/exerciseDb';
 
 const TYPE_BADGE = {
   lift: { label: 'Strength', color: 'var(--gym)' },
@@ -196,16 +199,26 @@ export default function Wod() {
   const [, setRefresh] = useState(0);
   const bump = () => setRefresh(r => r + 1);
 
-  const openRunner = (session, dayKey, date) => setRunning({ session, dayKey, date });
+  const openRunner = (session, dayKey, date) => {
+    // Recovery check: warn (never block) if this session hits muscles that
+    // are still inside their recovery window from recent logged work.
+    const history = historyFromWodLogs(store.getWodLogs());
+    const names = (session.exercises || []).map(e => e.name);
+    const { flagged } = evaluateSession(names, history);
+    const warnings = flagged.map(f => f.verdict.warnings[0]?.warning).filter(Boolean);
+    setRunning({ session, dayKey, date, warnings });
+  };
 
   const completeSession = (result) => {
     const { session, dayKey, date } = running;
-    store.saveWodSession({
+    const entry = {
       logId: sessionLogId(date, dayKey, session.slot),
       day: dayKey, slot: session.slot, title: session.title, type: session.type,
       dayLabel: DAY_LABEL[dayKey], exercises: result.exercises,
       doneCount: result.doneCount, totalSets: result.totalSets,
-    });
+    };
+    store.saveWodSession(entry);
+    logSessionToCloud({ ...entry, date: new Date().toISOString() }); // relational record, best-effort
     setRunning(null);
     bump();
   };
@@ -215,8 +228,7 @@ export default function Wod() {
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
       {/* Title + Tdy / Tmr / Week toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>WOD</div>
+      <PageHeader title="WOD" right={
         <div id="tutorial-views" style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 999, padding: 3 }}>
           {[['today', 'Tdy'], ['tomorrow', 'Tmr'], ['week', 'Week']].map(([v, label]) => (
             <button key={v} onClick={() => setView(v)}
@@ -229,7 +241,7 @@ export default function Wod() {
             </button>
           ))}
         </div>
-      </div>
+      } />
 
       {view === 'week' ? (
         PROGRAM.map(d => (
@@ -268,6 +280,7 @@ export default function Wod() {
           existing={store.getWodLog(sessionLogId(running.date, running.dayKey, running.session.slot))}
           onClose={() => setRunning(null)}
           onComplete={completeSession}
+          warnings={running.warnings || []}
         />
       )}
 

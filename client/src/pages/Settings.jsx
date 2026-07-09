@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
+import PageHeader from '../components/PageHeader';
 import { store, DEFAULT_PROFILE } from '../store/profile';
 import { setMuted, unlockAudio, fxAchievement } from '../lib/feedback';
 import { supabase } from '../lib/supabase';
@@ -50,10 +51,7 @@ export default function Settings() {
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1.5rem' }}>
-      <div>
-        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>SETTINGS</div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Profile & prescribed loads</div>
-      </div>
+      <PageHeader title="SETTINGS" subtitle="Profile & prescribed loads" />
 
       {/* Signed-in account */}
       <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>

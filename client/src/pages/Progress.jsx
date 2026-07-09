@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
+import PageHeader from '../components/PageHeader';
 import TierBadge from '../components/TierBadge';
 import { store } from '../store/profile';
 import { EVENTS, TIERS } from '../lib/scoring';
@@ -106,10 +107,7 @@ export default function Progress() {
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
-      <div id="tour-progress">
-        <div style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--accent)' }}>PROGRESS</div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Assessments · events · training</div>
-      </div>
+      <PageHeader title="PROGRESS" subtitle="Assessments · events · training" titleId="tour-progress" />
 
       {/* 6-week cycle status */}
       {startDate && (
