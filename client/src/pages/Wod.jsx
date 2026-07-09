@@ -401,6 +401,68 @@ export default function Wod() {
     );
   }
 
+  // Check if start date is in the future
+  const start = new Date(profile.programStartDate);
+  const today = new Date();
+  const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+
+  if (todayDateOnly < startDateOnly) {
+    const diffMs = startDateOnly - todayDateOnly;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const countdownText = diffDays === 1 ? "Starts tomorrow!" : `Starts in ${diffDays} days`;
+    const formattedStartDate = start.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+
+    return (
+      <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', justifyContent: 'center', gap: '1.5rem' }}>
+        <PageHeader title="WOD" subtitle="Tactical Training Program" />
+        <div className="card" style={{ maxWidth: 460, margin: '0.85rem auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '0.25rem' }}>⏳</div>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>Program Scheduled</h2>
+          <div>
+            <span style={{ 
+              background: 'color-mix(in srgb, var(--accent) 12%, transparent)', 
+              color: 'var(--accent)', 
+              padding: '0.6rem 1rem', 
+              borderRadius: 'var(--radius)', 
+              fontWeight: 800, 
+              fontSize: '0.95rem', 
+              display: 'inline-block', 
+              margin: '0.5rem auto' 
+            }}>
+              {countdownText}
+            </span>
+          </div>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.82rem', lineHeight: 1.5, margin: 0 }}>
+            Your 6-Week Progression training block is scheduled to begin on <strong style={{ color: 'var(--text)' }}>{formattedStartDate}</strong>.
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', lineHeight: 1.4, margin: 0 }}>
+            Take this time to rest, verify your baseline lifting specs, or click below to adjust your start date or training schedule.
+          </p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: '0.5rem' }}>
+            <button className="btn btn-primary" style={{ width: '100%', fontWeight: 800 }}
+              onClick={() => {
+                const now = new Date();
+                store.setProfile({ programStartDate: now.toISOString() });
+                bump();
+              }}>
+              Start Program Today 🚀
+            </button>
+            <button className="btn btn-secondary" style={{ width: '100%' }}
+              onClick={() => {
+                store.setProfile({ programStartDate: null });
+                bump();
+              }}>
+              Adjust Schedule ⚙️
+            </button>
+          </div>
+        </div>
+        <BottomNav active="wod" />
+      </div>
+    );
+  }
+
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
       {/* Title + Tdy / Tmr / Week toggle */}

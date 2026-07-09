@@ -3,14 +3,15 @@ import { store } from '../store/profile';
 /**
  * Calculates the "effective week" (1 to 6) for a specific lift, 
  * factoring in absolute calendar weeks minus skipped sessions.
- */
-function getEffectiveWeek(liftKey) {
+ */function getEffectiveWeek(liftKey) {
   const p = store.getProfile();
   if (!p.programStartDate) return 1;
   
   const start = new Date(p.programStartDate);
   const now = new Date();
-  const diffTime = Math.abs(now - start);
+  if (now < start) return 1;
+  
+  const diffTime = now - start;
   const calendarWeek = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
   
   // Count skipped workouts that contained this lift to pause progression
@@ -20,7 +21,6 @@ function getEffectiveWeek(liftKey) {
   // Effective week is calendar week minus skipped, clamped between 1 and 6
   return Math.min(Math.max(calendarWeek - skippedCount, 1), 6);
 }
-
 /**
  * Returns progression multiplier based on effective week (1-6).
  * Week 1: 65%, Week 2: 70%, Week 3: 75%, Week 4: 80%, Week 5: 85%, Week 6: 90%
