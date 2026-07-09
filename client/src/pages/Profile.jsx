@@ -19,7 +19,16 @@ export default function Profile() {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('dev_bypass');
+    const keysToClear = [
+      'tac5_profile',
+      'tac5_attempts',
+      'tac5_events',
+      'tac5_wod',
+      'tac5_exmem',
+      'tac5_custom_exercises',
+      'dev_bypass'
+    ];
+    keysToClear.forEach(k => localStorage.removeItem(k));
     window.location.reload();
   };
 

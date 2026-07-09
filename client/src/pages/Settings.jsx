@@ -29,13 +29,20 @@ export default function Settings() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAccount(data.session?.user?.email || null));
   }, []);
-
   const signOut = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('dev_bypass');
+    const keysToClear = [
+      'tac5_profile',
+      'tac5_attempts',
+      'tac5_events',
+      'tac5_wod',
+      'tac5_exmem',
+      'tac5_custom_exercises',
+      'dev_bypass'
+    ];
+    keysToClear.forEach(k => localStorage.removeItem(k));
     window.location.reload();
   };
-
   const set = (k, v) => setProfile(p => ({ ...p, [k]: v }));
 
   const save = () => {
@@ -240,7 +247,23 @@ export default function Settings() {
       <button className="btn btn-primary" onClick={save}>{saved ? 'Saved ✓' : 'Save Settings'}</button>
 
       <button className="btn btn-ghost" style={{ color: 'var(--danger)' }}
-        onClick={() => { setProfile({ ...DEFAULT_PROFILE }); }}>
+        onClick={() => {
+          if (window.confirm("Are you sure you want to reset the app? This will permanently delete your workout history, attempts, and progression start date. Your personal lift 1RMs and weight specs will be kept.")) {
+            const resetProfile = {
+              ...DEFAULT_PROFILE,
+              setupComplete: true,
+              oneRMs: { ...profile.oneRMs },
+              bodyweight: profile.bodyweight,
+              loadClass: profile.loadClass,
+              externalLoad: profile.externalLoad,
+              unit: profile.unit,
+            };
+            store.setProfile(resetProfile);
+            const keysToClear = ['tac5_attempts', 'tac5_events', 'tac5_wod', 'tac5_exmem'];
+            keysToClear.forEach(k => localStorage.removeItem(k));
+            window.location.reload();
+          }
+        }}>
         Reset to defaults
       </button>
 

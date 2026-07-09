@@ -41,14 +41,24 @@ export default function App() {
   const [setupComplete, setSetupComplete] = useState(store.getProfile().setupComplete);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        await store.fetchProfile();
+        setSetupComplete(store.getProfile().setupComplete);
+      }
       setSession(session);
       setLoading(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        await store.fetchProfile();
+        setSetupComplete(store.getProfile().setupComplete);
+      } else {
+        setSetupComplete(false);
+      }
       setSession(session);
     });
 
