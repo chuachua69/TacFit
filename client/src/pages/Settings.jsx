@@ -13,6 +13,12 @@ const EIGHT_TO_ONE = 1.2664;
 const toOneRM = (eightRM) => Math.round(eightRM * EIGHT_TO_ONE);
 const toEightRM = (oneRM) => Math.round(oneRM / EIGHT_TO_ONE);
 
+// yyyy-mm-dd (local) for <input type="date">, round-tripping the stored ISO.
+const toDateInput = (iso) => {
+  const d = iso ? new Date(iso) : new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export default function Settings() {
   const [profile, setProfile] = useState(store.getProfile());
   const [saved, setSaved] = useState(false);
@@ -67,6 +73,17 @@ export default function Settings() {
             Sign out
           </button>
         )}
+      </div>
+
+      {/* Program cycle */}
+      <div className="card">
+        <div className="label">Program start date <span style={{ textTransform: 'none', color: 'var(--text-muted)' }}>· week 1 begins here</span></div>
+        <input type="date" value={toDateInput(profile.programStartDate)}
+          onChange={e => set('programStartDate', new Date(`${e.target.value}T12:00:00`).toISOString())}
+          style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+          Shifts the whole 6-week cycle. Your prescribed weights recalculate from this date.
+        </p>
       </div>
 
       <div id="tour-settings" className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
