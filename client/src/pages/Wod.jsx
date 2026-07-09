@@ -258,7 +258,7 @@ export default function Wod() {
                 Toggle the days you want to schedule runs. Your remaining core training blocks (Lifts, EMOMs, Conditioning) will distribute around them.
               </p>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '0.5rem 0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '0.5rem 0' }}>
                 {[['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']].map(([key, name]) => {
                   const active = runDays.includes(key);
                   return (
@@ -271,13 +271,13 @@ export default function Wod() {
                           setRunTypes(newTypes);
                         } else {
                           setRunDays([...runDays, key]);
-                          setRunTypes({ ...runTypes, [key]: 'easy' }); // default to easy run
+                          setRunTypes({ ...runTypes, [key]: 'easy' });
                         }
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '0.8rem 1rem', borderRadius: 'var(--radius)',
-                        background: active ? 'var(--accent)12' : 'var(--bg-elevated)',
+                        padding: '0.95rem 1rem', borderRadius: 'var(--radius)',
+                        background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'var(--bg-elevated)',
                         border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
                         color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
                       }}>
@@ -290,7 +290,7 @@ export default function Wod() {
                 })}
               </div>
 
-              <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontWeight: 800 }}
+              <button className="btn btn-primary" style={{ width: '100%', fontWeight: 800 }}
                 disabled={runDays.length === 0}
                 onClick={() => setWizardStep(1)}>
                 Next: Assign Run Types →
@@ -314,7 +314,7 @@ export default function Wod() {
                       value={runTypes[day] || 'easy'}
                       onChange={e => setRunTypes({ ...runTypes, [day]: e.target.value })}
                       style={{
-                        width: '100%', padding: '0.6rem',
+                        width: '100%', padding: '0.75rem',
                         background: 'var(--bg-elevated)', color: 'var(--text)',
                         border: '1px solid var(--border)', borderRadius: 'var(--radius)'
                       }}>
@@ -350,7 +350,7 @@ export default function Wod() {
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
                   <button
                     className="btn"
-                    style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
+                    style={{ flex: 1, borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
                       background: startDateInput === todayStr ? 'var(--accent)' : 'var(--bg-elevated)',
                       color: startDateInput === todayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
                     onClick={() => setStartDateInput(todayStr)}>
@@ -358,7 +358,7 @@ export default function Wod() {
                   </button>
                   <button
                     className="btn"
-                    style={{ flex: 1, padding: '0.55rem', borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
+                    style={{ flex: 1, borderRadius: 'var(--radius)', fontSize: '0.8rem', fontWeight: 700,
                       background: startDateInput === mondayStr ? 'var(--accent)' : 'var(--bg-elevated)',
                       color: startDateInput === mondayStr ? '#000' : 'var(--text)', border: '1px solid var(--border)' }}
                     onClick={() => setStartDateInput(mondayStr)}>
@@ -367,7 +367,7 @@ export default function Wod() {
                 </div>
                 <input type="date" value={startDateInput} min={todayStr}
                   onChange={e => setStartDateInput(e.target.value)}
-                  style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
+                  style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.4, margin: 0 }}>
                   A Monday start aligns cleanest with your weekly core training cycle.
                 </p>

@@ -203,16 +203,22 @@ export default function Settings() {
         </div>
       </details>
 
-      <button className="btn btn-secondary"
-        onClick={() => {
-          const subject = encodeURIComponent("TacFit App Feedback & Suggestions");
-          const body = encodeURIComponent(
-            "Hi TacFit Team,\n\nHere is my feedback on the app:\n\n1. What I like:\n\n2. What could be improved:\n\n3. Bugs/issues encountered:\n\nApp Info:\n- Platform: " + navigator.userAgent + "\n- Version: 1.3.0"
-          );
-          window.location.href = `mailto:support@tacfit.app?subject=${subject}&body=${body}`;
-        }}>
-        Submit Feedback
-      </button>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontWeight: 700 }}>Support & Feedback</div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+          Have ideas, feature requests, or encountered a bug? Send us an email using our preset feedback template.
+        </div>
+        <button className="btn btn-secondary" style={{ width: '100%', marginTop: '0.4rem' }}
+          onClick={() => {
+            const subject = encodeURIComponent("TacFit App Feedback & Suggestions");
+            const body = encodeURIComponent(
+              "Hi TacFit Team,\n\nHere is my feedback on the app:\n\n1. What I like:\n\n2. What could be improved:\n\n3. Bugs/issues encountered:\n\nApp Info:\n- Platform: " + navigator.userAgent + "\n- Version: 1.3.0"
+            );
+            window.location.href = `mailto:support@tacfit.app?subject=${subject}&body=${body}`;
+          }}>
+          Submit Feedback
+        </button>
+      </div>
 
       {/* Feedback prefs */}
       <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
