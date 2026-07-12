@@ -27,3 +27,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Android build outputs — don't commit these
+app/build/
+build/
+*.aab
+*.apk
