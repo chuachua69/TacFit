@@ -1,31 +1,40 @@
 import { store } from '../store/profile';
 
+// Local-midnight copy of a date, so week/day math never depends on the
+// stored time-of-day (start dates are saved at local noon or wall-clock).
+const atMidnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
 /**
- * Calculates the "effective week" (1 to 6) for a specific lift, 
+ * Calculates the "effective week" (1 to 6) for a specific lift,
  * factoring in absolute calendar weeks minus skipped sessions.
- */function getEffectiveWeek(liftKey) {
+ * Exported so SessionRunner shares this exact logic (no duplicates).
+ */
+export function getEffectiveWeek(liftKey) {
   const p = store.getProfile();
   if (!p.programStartDate) return 1;
-  
-  const start = new Date(p.programStartDate);
-  const now = new Date();
+
+  // Normalize both ends to local midnight: week boundaries flip at midnight,
+  // not at whatever time the start date was stored.
+  const start = atMidnight(new Date(p.programStartDate));
+  const now = atMidnight(new Date());
   if (now < start) return 1;
-  
+
   const diffTime = now - start;
   const calendarWeek = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
-  
+
   // Count skipped workouts that contained this lift to pause progression
   const logs = store.getWodLogs();
   const skippedCount = logs.filter(w => w.status === 'skipped' && w.lifts && w.lifts.includes(liftKey)).length;
-  
+
   // Effective week is calendar week minus skipped, clamped between 1 and 6
   return Math.min(Math.max(calendarWeek - skippedCount, 1), 6);
 }
 /**
  * Returns progression multiplier based on effective week (1-6).
  * Week 1: 65%, Week 2: 70%, Week 3: 75%, Week 4: 80%, Week 5: 85%, Week 6: 90%
+ * Exported for SessionRunner (shared single implementation).
  */
-function getProgressionPct(week) {
+export function getProgressionPct(week) {
   return 0.60 + (week * 0.05); // week 1 = 65%
 }
 
@@ -268,12 +277,19 @@ export function getFullProgram() {
   return PROGRAM;
 }
 
+/** yyyy-mm-dd in LOCAL time. Session logIds must use the local calendar date —
+ *  toISOString() is UTC, which made a session's id change mid-morning for any
+ *  timezone east of UTC (completed sessions "un-completed" after 8am SGT). */
+export function localDateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function dateForDayKey(key, base = new Date()) {
   const todayIdx = (base.getDay() + 6) % 7;
   const targetIdx = DAY_ORDER.indexOf(key);
   const d = new Date(base);
   d.setDate(d.getDate() + (targetIdx - todayIdx));
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 export function sessionLogId(date, day, slot) {

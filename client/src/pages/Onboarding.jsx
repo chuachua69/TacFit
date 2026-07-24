@@ -5,19 +5,6 @@ import { store } from '../store/profile';
 // For exactly 8 reps: Weight * (1 + 0.0333 * 8) = Weight * 1.2664
 const estimate1RM = (weight8rm) => Math.round(weight8rm * 1.2664);
 
-// yyyy-mm-dd for a Date, in local time (so <input type="date"> round-trips).
-const toDateInput = (d) => {
-  const x = new Date(d);
-  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-};
-// The next upcoming Monday (or today if it's already Monday).
-export const nextMonday = (from = new Date()) => {
-  const d = new Date(from);
-  const delta = (8 - d.getDay()) % 7; // Sun=0→1, Mon=1→0, Tue=2→6 ...
-  d.setDate(d.getDate() + delta);
-  return d;
-};
-
 export default function Onboarding({ onComplete }) {
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState('1RM'); // '1RM' or '8RM'
@@ -27,6 +14,9 @@ export default function Onboarding({ onComplete }) {
     bench: '',
     press: ''
   });
+
+  // All four lifts must be real numbers — zeros would prescribe 0 kg workouts.
+  const liftsValid = Object.values(lifts).every(v => parseFloat(v) > 0);
 
   const handleNext = () => {
     if (step === 0) setStep(1);
@@ -123,7 +113,13 @@ export default function Onboarding({ onComplete }) {
             </div>
           </div>
 
-          <button className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} onClick={handleNext}>
+          {!liftsValid && (
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', marginBottom: 0 }}>
+              Enter all four lifts — zeros would prescribe 0 kg workouts.
+            </p>
+          )}
+          <button className="btn btn-primary" disabled={!liftsValid}
+            style={{ width: '100%', marginTop: '1.5rem', opacity: liftsValid ? 1 : 0.5 }} onClick={handleNext}>
             Calculate & Complete Setup
           </button>
         </div>

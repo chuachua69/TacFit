@@ -37,11 +37,13 @@ export const EQUIPMENT = Object.freeze([
 ]);
 
 /**
- * Seed catalog — 27 foundational movements covering every body part, with
- * sports-science fatigue scores (5 = max CNS hit, 1 = trivial isolation)
+ * Seed catalog — foundational + extended movements covering every body part,
+ * with sports-science fatigue scores (5 = max CNS hit, 1 = trivial isolation)
  * and baseline recovery windows (72h heavy hinge/squat, 48h compounds,
  * 24h isolation/light work). Aliases map the WOD program's exercise strings
- * onto catalog entries.
+ * (and the runner's swap-list variants) onto catalog entries.
+ * The SQL seed in schema.sql is GENERATED from this array — after editing,
+ * run `node scripts/gen-seed.mjs` and re-run schema.sql in Supabase.
  * @type {Exercise[]}
  */
 export const SEED_EXERCISES = Object.freeze([
@@ -49,7 +51,7 @@ export const SEED_EXERCISES = Object.freeze([
   { id: 'bench-press', name: 'Barbell Bench Press', primary_body_part: 'Chest',
     secondary_body_parts: ['Triceps', 'Shoulders'], movement_category: 'Compound',
     equipment: 'Barbell', fatigue_score: 4, required_rest_hours: 48,
-    aliases: ['Bench Press', 'Bench Press (bodyweight)', 'Min 3 — Bench Press'] },
+    aliases: ['Bench Press', 'Bench Press (bodyweight)', 'Min 3 — Bench Press', 'Floor Press'] },
   { id: 'incline-db-press', name: 'Incline Dumbbell Press', primary_body_part: 'Chest',
     secondary_body_parts: ['Shoulders', 'Triceps'], movement_category: 'Compound',
     equipment: 'Dumbbell', fatigue_score: 3, required_rest_hours: 48 },
@@ -62,7 +64,7 @@ export const SEED_EXERCISES = Object.freeze([
   { id: 'pullup', name: 'Pull-Up', primary_body_part: 'Back',
     secondary_body_parts: ['Biceps', 'Core'], movement_category: 'Compound',
     equipment: 'Bodyweight', fatigue_score: 3, required_rest_hours: 48,
-    aliases: ['Strict Bodyweight Pull-Ups', 'Min 4 — Pull-Ups'] },
+    aliases: ['Strict Bodyweight Pull-Ups', 'Min 4 — Pull-Ups', 'Band-Assisted Pull-Ups'] },
   { id: 'kipping-pullup', name: 'Kipping Pull-Up', primary_body_part: 'Back',
     secondary_body_parts: ['Biceps', 'Core', 'Shoulders'], movement_category: 'Compound',
     equipment: 'Bodyweight', fatigue_score: 2, required_rest_hours: 24,
@@ -77,12 +79,14 @@ export const SEED_EXERCISES = Object.freeze([
     aliases: ['Face Pulls'] },
   { id: 'dead-hang', name: 'Dead Hang', primary_body_part: 'Back',
     secondary_body_parts: ['Core'], movement_category: 'Isolation',
-    equipment: 'Bodyweight', fatigue_score: 1, required_rest_hours: 24 },
+    equipment: 'Bodyweight', fatigue_score: 1, required_rest_hours: 24,
+    aliases: ['Active Pull-Up Hang', 'Chin-Up Hang', 'Barbell Hold (Heavy)'] },
 
   // ── Quads ────────────────────────────────────────────────────────────────
   { id: 'back-squat', name: 'Back Squat', primary_body_part: 'Quads',
     secondary_body_parts: ['Hamstrings', 'Core'], movement_category: 'Compound',
-    equipment: 'Barbell', fatigue_score: 5, required_rest_hours: 72 },
+    equipment: 'Barbell', fatigue_score: 5, required_rest_hours: 72,
+    aliases: ['Barbell Box Squat'] },
   { id: 'front-squat', name: 'Front Squat', primary_body_part: 'Quads',
     secondary_body_parts: ['Core', 'Shoulders'], movement_category: 'Compound',
     equipment: 'Barbell', fatigue_score: 4, required_rest_hours: 48 },
@@ -98,10 +102,12 @@ export const SEED_EXERCISES = Object.freeze([
   // ── Hamstrings ───────────────────────────────────────────────────────────
   { id: 'deadlift', name: 'Deadlift', primary_body_part: 'Hamstrings',
     secondary_body_parts: ['Back', 'Quads', 'Core'], movement_category: 'Compound',
-    equipment: 'Barbell', fatigue_score: 5, required_rest_hours: 72 },
+    equipment: 'Barbell', fatigue_score: 5, required_rest_hours: 72,
+    aliases: ['Trap Bar Deadlift'] },
   { id: 'rdl', name: 'Romanian Deadlift', primary_body_part: 'Hamstrings',
     secondary_body_parts: ['Back', 'Core'], movement_category: 'Compound',
-    equipment: 'Barbell', fatigue_score: 4, required_rest_hours: 48 },
+    equipment: 'Barbell', fatigue_score: 4, required_rest_hours: 48,
+    aliases: ['Romanian Deadlift (RDL)', 'Kettlebell Deadlift (Heavy)', 'Kettlebell Deadlift'] },
 
   // ── Shoulders ────────────────────────────────────────────────────────────
   { id: 'overhead-press', name: 'Overhead Press', primary_body_part: 'Shoulders',
@@ -138,13 +144,15 @@ export const SEED_EXERCISES = Object.freeze([
   { id: 'hanging-leg-raise', name: 'Hanging Leg Raise', primary_body_part: 'Core',
     secondary_body_parts: [], movement_category: 'Isolation',
     equipment: 'Bodyweight', fatigue_score: 2, required_rest_hours: 24,
-    aliases: ['Hanging Leg Raises'] },
+    aliases: ['Hanging Leg Raises', 'Hanging Knee Raise Hold', 'Hanging Knee Raise'] },
   { id: 'weighted-plank', name: 'Weighted Plank', primary_body_part: 'Core',
     secondary_body_parts: ['Shoulders'], movement_category: 'Isolation',
-    equipment: 'Bodyweight', fatigue_score: 2, required_rest_hours: 24 },
+    equipment: 'Bodyweight', fatigue_score: 2, required_rest_hours: 24,
+    aliases: ['Standard Plank'] },
   { id: 'farmers-carry', name: "Farmer's Carry", primary_body_part: 'Core',
     secondary_body_parts: ['Back', 'Calves'], movement_category: 'Compound',
-    equipment: 'Kettlebell', fatigue_score: 3, required_rest_hours: 24 },
+    equipment: 'Kettlebell', fatigue_score: 3, required_rest_hours: 24,
+    aliases: ["Dumbbell Farmer's Walk"] },
 
   // ── Calves ───────────────────────────────────────────────────────────────
   { id: 'calf-raise', name: 'Deficit Calf Raise', primary_body_part: 'Calves',
@@ -164,16 +172,17 @@ export const SEED_EXERCISES = Object.freeze([
   { id: 'zone2-run', name: 'Zone 2 Run', primary_body_part: 'Cardio',
     secondary_body_parts: ['Calves'], movement_category: 'Compound',
     equipment: 'Bodyweight', fatigue_score: 2, required_rest_hours: 24,
-    aliases: ['Long Aerobic Run (Zone 2)'] },
+    aliases: ['Long Aerobic Run (Zone 2)', 'Easy Recovery Run', 'Easy Recovery Run (Zone 1/2)'] },
 
   // ── Extended Database ────────────────────────────────────────────────────
   { id: 'db-bench-press', name: 'Dumbbell Bench Press', primary_body_part: 'Chest',
     secondary_body_parts: ['Triceps', 'Shoulders'], movement_category: 'Compound',
-    equipment: 'Dumbbell', fatigue_score: 3, required_rest_hours: 48 },
+    equipment: 'Dumbbell', fatigue_score: 3, required_rest_hours: 48,
+    aliases: ['Dumbbell Press'] },
   { id: 'pushup', name: 'Push-Up', primary_body_part: 'Chest',
     secondary_body_parts: ['Triceps', 'Shoulders'], movement_category: 'Compound',
     equipment: 'Bodyweight', fatigue_score: 2, required_rest_hours: 24,
-    aliases: ['Push-Ups'] },
+    aliases: ['Push-Ups', 'Push-Ups (Weighted)', 'Pike Push-Ups'] },
   { id: 'chest-fly', name: 'Dumbbell Chest Fly', primary_body_part: 'Chest',
     secondary_body_parts: [], movement_category: 'Isolation',
     equipment: 'Dumbbell', fatigue_score: 1, required_rest_hours: 24 },
@@ -191,7 +200,8 @@ export const SEED_EXERCISES = Object.freeze([
     equipment: 'Bodyweight', fatigue_score: 1, required_rest_hours: 24 },
   { id: 'db-shoulder-press', name: 'Dumbbell Shoulder Press', primary_body_part: 'Shoulders',
     secondary_body_parts: ['Triceps'], movement_category: 'Compound',
-    equipment: 'Dumbbell', fatigue_score: 3, required_rest_hours: 48 },
+    equipment: 'Dumbbell', fatigue_score: 3, required_rest_hours: 48,
+    aliases: ['Kettlebell Press'] },
   { id: 'cable-lateral-raise', name: 'Cable Lateral Raise', primary_body_part: 'Shoulders',
     secondary_body_parts: [], movement_category: 'Isolation',
     equipment: 'Cable', fatigue_score: 1, required_rest_hours: 24 },
@@ -200,9 +210,12 @@ export const SEED_EXERCISES = Object.freeze([
     equipment: 'Machine', fatigue_score: 4, required_rest_hours: 48 },
   { id: 'goblet-squat', name: 'Goblet Squat', primary_body_part: 'Quads',
     secondary_body_parts: ['Core'], movement_category: 'Compound',
-    equipment: 'Kettlebell', fatigue_score: 2, required_rest_hours: 24 },
+    equipment: 'Kettlebell', fatigue_score: 2, required_rest_hours: 24,
+    aliases: ['Heavy Goblet Squat'] },
   { id: 'bulgarian-split-squat', name: 'Bulgarian Split Squat', primary_body_part: 'Quads',
-    secondary_body_parts: ['Glutes', 'Hamstrings'], movement_category: 'Compound',
+    // 'Glutes' isn't a BodyPart enum value — Hamstrings+Core keep the recovery
+    // engine, custom-exercise validation, and SQL constraints consistent.
+    secondary_body_parts: ['Hamstrings', 'Core'], movement_category: 'Compound',
     equipment: 'Dumbbell', fatigue_score: 3, required_rest_hours: 48 },
   { id: 'leg-extensions', name: 'Leg Extension', primary_body_part: 'Quads',
     secondary_body_parts: [], movement_category: 'Isolation',
@@ -291,20 +304,30 @@ export function getCatalog() {
 
 // Name → exercise lookup (seed names + aliases + custom names), normalized.
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+// Plural-insensitive form: 'kettlebell swings' matches 'Kettlebell Swing'.
+// Applied to BOTH sides, so 'Dips' vs 'Dip' still compare equal.
+const deplural = (s) => s.replace(/s\b/g, '');
 
 /**
  * Find a catalog entry for a program/log exercise name. Returns null for
  * unmatched strings (warm-ups, stretches, rest rows) — those simply don't
- * contribute to recovery math.
+ * contribute to recovery math. Exact match wins; a plural-insensitive pass
+ * catches swap-list variants like 'Lat Pulldowns'.
  * @param {string} name
  * @returns {Exercise|null}
  */
 export function findExercise(name) {
   const n = norm(name);
   if (!n) return null;
-  for (const ex of getCatalog()) {
+  const catalog = getCatalog();
+  for (const ex of catalog) {
     if (norm(ex.name) === n) return ex;
     if ((ex.aliases || []).some(a => norm(a) === n)) return ex;
+  }
+  const np = deplural(n);
+  for (const ex of catalog) {
+    if (deplural(norm(ex.name)) === np) return ex;
+    if ((ex.aliases || []).some(a => deplural(norm(a)) === np)) return ex;
   }
   return null;
 }

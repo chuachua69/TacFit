@@ -3,10 +3,10 @@ import BottomNav from '../components/BottomNav';
 import PageHeader from '../components/PageHeader';
 import {
   BODY_PARTS, MOVEMENT_CATEGORIES, EQUIPMENT,
-  getCatalog, removeLocalCustomExercise,
+  getCatalog,
 } from '../lib/exerciseCatalog';
 import { historyFromWodLogs, muscleStatus, dayCap, evaluateExercise } from '../lib/recovery';
-import { createCustomExercise, fetchCloudCustomExercises } from '../lib/exerciseDb';
+import { createCustomExercise, deleteCustomExercise, fetchCloudCustomExercises } from '../lib/exerciseDb';
 import { store } from '../store/profile';
 
 const fmtUntil = (d) => d.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
@@ -205,7 +205,7 @@ export default function Exercises() {
                     F{ex.fatigue_score}
                   </span>
                   {ex.custom && (
-                    <button onClick={() => { removeLocalCustomExercise(ex.id); refresh(); }}
+                    <button onClick={() => { deleteCustomExercise(ex.id).then(refresh); refresh(); }}
                       aria-label={`Delete ${ex.name}`}
                       style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1rem', flexShrink: 0 }}>
                       ✕

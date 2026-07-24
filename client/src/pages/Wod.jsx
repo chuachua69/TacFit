@@ -2,7 +2,7 @@ import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
 import PageHeader from '../components/PageHeader';
 import SessionRunner from '../components/SessionRunner';
-import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey } from '../lib/wodProgram';
+import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey, localDateStr } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount, fxUncount } from '../lib/feedback';
 import { historyFromWodLogs, evaluateSession } from '../lib/recovery';
@@ -33,7 +33,7 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
   if (skipped) {
     statusText = 'Skipped / Failed';
     statusColor = 'var(--danger)'; // red
-    borderColor = 'var(--danger)45';
+    borderColor = 'color-mix(in srgb, var(--danger) 45%, transparent)';
     statusIcon = '🔴';
   } else if (done) {
     if (log && log.exercises) {
@@ -67,31 +67,46 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
       if (doneCount === 0) {
         statusText = 'Failed (0 sets done)';
         statusColor = 'var(--danger)';
-        borderColor = 'var(--danger)45';
+        borderColor = 'color-mix(in srgb, var(--danger) 45%, transparent)';
         statusIcon = '🔴';
       } else if (hasFail || hasPartial || doneCount < totalSets) {
         statusText = `Partial (${doneCount}/${totalSets})`;
         statusColor = 'var(--warn)';
-        borderColor = 'var(--warn)45';
+        borderColor = 'color-mix(in srgb, var(--warn) 45%, transparent)';
         statusIcon = '🟡';
       } else {
         statusText = 'Completed';
         statusColor = 'var(--success)';
-        borderColor = 'var(--success)45';
+        borderColor = 'color-mix(in srgb, var(--success) 45%, transparent)';
         statusIcon = '🟢';
       }
     } else {
       statusText = 'Completed';
       statusColor = 'var(--success)';
-      borderColor = 'var(--success)45';
+      borderColor = 'color-mix(in srgb, var(--success) 45%, transparent)';
       statusIcon = '🟢';
     }
   }
 
-  const entry = { logId, day: dayKey, slot: session.slot, title: session.title, type: session.type, dayLabel: DAY_LABEL[dayKey] };
+  // `lifts` powers the skip-progression pause in getEffectiveWeek — it must be
+  // persisted on every entry or skipping never holds back the %1RM climb.
+  const entry = {
+    logId, day: dayKey, slot: session.slot, title: session.title, type: session.type,
+    dayLabel: DAY_LABEL[dayKey], lifts: session.liftKeys || [],
+  };
   const skip = () => { store.skipWod(entry); fxUncount(); onRefresh(); };
   const undo = () => { store.removeWod(logId); fxUncount(); onRefresh(); };
-  const markDone = () => { store.saveWodSession(entry); fxCount(); onRefresh(); };
+  const markDone = () => {
+    // Runs log as a one-exercise session so the title resolves through the
+    // catalog aliases (interval/zone2 runs) and feeds the recovery engine +
+    // cloud workout_logs — otherwise run fatigue is invisible to R1/R3.
+    const done = session.type === 'run'
+      ? { ...entry, exercises: [{ name: session.title }] }
+      : entry;
+    store.saveWodSession(done);
+    if (session.type === 'run') logSessionToCloud({ ...done, date: new Date().toISOString() });
+    fxCount(); onRefresh();
+  };
 
   const slotTag = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -189,7 +204,9 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
   );
 }
 
-const isoOffset = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; };
+// LOCAL calendar date ±n days — must match dateForDayKey's local format so a
+// session's logId is stable all day (UTC dates shifted mid-morning in SGT).
+const isoOffset = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return localDateStr(d); };
 
 export default function Wod() {
   const tk = todayKey();
@@ -205,20 +222,27 @@ export default function Wod() {
 
   const getNextMonday = () => {
     const d = new Date();
-    const delta = (8 - d.getDay()) % 7;
+    // `|| 7`: on a Monday, "Next Monday" means the FOLLOWING Monday, not today.
+    const delta = ((8 - d.getDay()) % 7) || 7;
     d.setDate(d.getDate() + delta);
     return d;
   };
 
   const [startDateInput, setStartDateInput] = useState(toDateInput(new Date()));
   const [wizardStep, setWizardStep] = useState(0); // 0: Select Days, 1: Assign Types, 2: Start Date
-  const [runDays, setRunDays] = useState(['tue', 'sat']);
-  const [runTypes, setRunTypes] = useState({ tue: 'intervals', sat: 'zone2' });
+  // Seed from the saved schedule so "Adjust Schedule" doesn't silently reset a
+  // custom run plan back to the tue/sat defaults after a page reload.
+  const savedSchedule = store.getProfile().customSchedule;
+  const [runDays, setRunDays] = useState(() => savedSchedule?.runDays ?? ['tue', 'sat']);
+  const [runTypes, setRunTypes] = useState(() => savedSchedule?.runTypes ?? { tue: 'intervals', sat: 'zone2' });
 
   const openRunner = (session, dayKey, date) => {
     // Recovery check: warn (never block) if this session hits muscles that
     // are still inside their recovery window from recent logged work.
-    const history = historyFromWodLogs(store.getWodLogs());
+    // Exclude the session being opened — editing a done session must not
+    // warn about its own sets.
+    const logId = sessionLogId(date, dayKey, session.slot);
+    const history = historyFromWodLogs(store.getWodLogs().filter(w => w.logId !== logId));
     const names = (session.exercises || []).map(e => e.name);
     const { flagged } = evaluateSession(names, history);
     const warnings = flagged.map(f => f.verdict.warnings[0]?.warning).filter(Boolean);
@@ -230,7 +254,7 @@ export default function Wod() {
     const entry = {
       logId: sessionLogId(date, dayKey, session.slot),
       day: dayKey, slot: session.slot, title: session.title, type: session.type,
-      dayLabel: DAY_LABEL[dayKey], exercises: result.exercises,
+      dayLabel: DAY_LABEL[dayKey], lifts: session.liftKeys || [], exercises: result.exercises,
       doneCount: result.doneCount, totalSets: result.totalSets,
     };
     store.saveWodSession(entry);

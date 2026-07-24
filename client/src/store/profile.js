@@ -12,6 +12,15 @@ const KEYS = {
   EXMEM: 'tac5_exmem',         // last-used weight per exercise name
 };
 
+// Every localStorage key the app writes, in ONE place. Sign-out handlers use
+// this so a new storage key can never silently leak across accounts again.
+const ALL_LOCAL_KEYS = [...Object.values(KEYS), 'tac5_custom_exercises', 'dev_bypass'];
+
+/** Wipe all app data on this device (used on sign-out). */
+export function clearAllLocalData() {
+  ALL_LOCAL_KEYS.forEach(k => localStorage.removeItem(k));
+}
+
 export const DEFAULT_PROFILE = {
   setupComplete: false,
   tutorialSeen: false,
@@ -132,7 +141,10 @@ export const store = {
   saveWodSession(entry) {
     const all = store.getWodLogs();
     const idx = all.findIndex(w => w.logId === entry.logId);
-    const record = { status: 'done', ...entry, id: entry.id || Date.now(), date: new Date().toISOString() };
+    // Preserve the original completion date on edits — restamping would shift
+    // the session's fatigue timestamps and extend recovery windows.
+    const date = (idx >= 0 && all[idx].date) || new Date().toISOString();
+    const record = { status: 'done', ...entry, id: entry.id || Date.now(), date };
     if (idx >= 0) all[idx] = record;
     else all.push(record);
     localStorage.setItem(KEYS.WOD, JSON.stringify(all));
@@ -159,7 +171,10 @@ export const store = {
     syncToSupabase();
     return mem;
   },
-  resetAppButKeepLifts() {
+  // Async ON PURPOSE: callers must `await` this before reloading the page.
+  // The cloud upsert has to land first — otherwise fetchProfile pulls the old
+  // row back on reload and the reset silently undoes itself.
+  async resetAppButKeepLifts() {
     const current = store.getProfile();
     const resetProfile = {
       ...DEFAULT_PROFILE,
@@ -175,6 +190,6 @@ export const store = {
     localStorage.removeItem(KEYS.EVENTS);
     localStorage.removeItem(KEYS.WOD);
     localStorage.removeItem(KEYS.EXMEM);
-    syncToSupabase();
+    await syncToSupabase();
   }
 };

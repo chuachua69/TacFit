@@ -64,7 +64,7 @@ export default function RestTimer({ start = 90, title = 'Rest Timer', showPreset
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
               {PRESETS.map(s => (
                 <button key={s} onClick={() => reset(s)}
-                  style={{ padding: '0.35rem 0.75rem', borderRadius: 999, background: seconds === s ? 'var(--accent)30' : 'var(--bg-elevated)', border: `1px solid ${seconds === s ? 'var(--accent)' : 'var(--border)'}`, fontSize: '0.8rem', fontWeight: 700, color: seconds === s ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  style={{ padding: '0.35rem 0.75rem', borderRadius: 999, background: seconds === s ? 'color-mix(in srgb, var(--accent) 19%, transparent)' : 'var(--bg-elevated)', border: `1px solid ${seconds === s ? 'var(--accent)' : 'var(--border)'}`, fontSize: '0.8rem', fontWeight: 700, color: seconds === s ? 'var(--accent)' : 'var(--text-muted)' }}>
                   {s >= 60 ? `${s / 60}m` : `${s}s`}
                 </button>
               ))}

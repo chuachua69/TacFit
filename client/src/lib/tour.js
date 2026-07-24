@@ -70,8 +70,8 @@ export function startAppTour(navigate) {
   const d = driver({
     allowClose: true,
     overlayColor: 'rgba(0,0,0,0.75)',
-    onNextClick: () => render(idx + 1),
-    onPrevClick: () => render(idx - 1),
+    onNextClick: () => render(idx + 1, 1),
+    onPrevClick: () => render(idx - 1, -1),
     onCloseClick: finish,
     onDestroyStarted: finish,
   });
@@ -85,8 +85,11 @@ export function startAppTour(navigate) {
     d.destroy();
   }
 
-  function show(i) {
+  function show(i, dir = 1) {
     const s = STEPS[i];
+    // Anchor missing (e.g. rest day → no session card)? Skip in the same
+    // direction instead of floating a popover over nothing.
+    if (!document.querySelector(s.element)) { render(i + dir, dir); return; }
     d.highlight({
       element: s.element,
       popover: {
@@ -98,20 +101,20 @@ export function startAppTour(navigate) {
     });
   }
 
-  function render(i) {
+  function render(i, dir = 1) {
     if (i < 0) return;               // already at the first step
     if (i >= STEPS.length) { finish(); return; } // past the last → done
     const needNav = STEPS[i].path !== STEPS[idx].path;
     idx = i;
     if (needNav) {
       navigate(STEPS[i].path);
-      setTimeout(() => show(i), 450); // let the new tab mount first
+      setTimeout(() => show(i, dir), 450); // let the new tab mount first
     } else {
-      show(i);
+      show(i, dir);
     }
   }
 
   activeTour = d;
-  show(0);
+  show(0, 1);
   return d;
 }

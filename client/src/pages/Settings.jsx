@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
 import PageHeader from '../components/PageHeader';
-import { store, DEFAULT_PROFILE } from '../store/profile';
+import { store, clearAllLocalData } from '../store/profile';
 import { setMuted, unlockAudio, fxAchievement } from '../lib/feedback';
 import { supabase } from '../lib/supabase';
 
@@ -31,16 +31,7 @@ export default function Settings() {
   }, []);
   const signOut = async () => {
     await supabase.auth.signOut();
-    const keysToClear = [
-      'tac5_profile',
-      'tac5_attempts',
-      'tac5_events',
-      'tac5_wod',
-      'tac5_exmem',
-      'tac5_custom_exercises',
-      'dev_bypass'
-    ];
-    keysToClear.forEach(k => localStorage.removeItem(k));
+    clearAllLocalData(); // single source of truth for keys — no hand-kept list
     window.location.reload();
   };
   const set = (k, v) => setProfile(p => ({ ...p, [k]: v }));
@@ -82,14 +73,18 @@ export default function Settings() {
         )}
       </div>
 
-      {/* Program cycle */}
+      {/* Program cycle — the WOD wizard owns scheduling; this is the "shift the
+          cycle" escape hatch. Empty when unset (don't fake today's date), and a
+          future date sends the WOD tab back to its countdown screen. */}
       <div className="card">
         <div className="label">Program start date <span style={{ textTransform: 'none', color: 'var(--text-muted)' }}>· week 1 begins here</span></div>
-        <input type="date" value={toDateInput(profile.programStartDate)}
-          onChange={e => set('programStartDate', new Date(`${e.target.value}T12:00:00`).toISOString())}
+        <input type="date" value={profile.programStartDate ? toDateInput(profile.programStartDate) : ''}
+          onChange={e => e.target.value && set('programStartDate', new Date(`${e.target.value}T12:00:00`).toISOString())}
           style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }} />
         <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-          Shifts the whole 6-week cycle. Your prescribed weights recalculate from this date.
+          {profile.programStartDate
+            ? 'Shifts the whole 6-week cycle. Your prescribed weights recalculate from this date. A future date pauses training behind a countdown.'
+            : 'Not scheduled yet — set up your program on the WOD tab.'}
         </p>
       </div>
 
@@ -236,7 +231,7 @@ export default function Settings() {
         <button onClick={() => { const m = !profile.muted; set('muted', m); setMuted(m); if (!m) { unlockAudio(); fxAchievement(); } }}
           style={{
             padding: '0.5rem 1rem', borderRadius: 999, fontWeight: 700, fontSize: '0.85rem',
-            background: profile.muted ? 'var(--bg-elevated)' : 'var(--accent)20',
+            background: profile.muted ? 'var(--bg-elevated)' : 'color-mix(in srgb, var(--accent) 13%, transparent)',
             border: `1px solid ${profile.muted ? 'var(--border)' : 'var(--accent)'}`,
             color: profile.muted ? 'var(--text-muted)' : 'var(--accent)',
           }}>
@@ -247,10 +242,11 @@ export default function Settings() {
       <button className="btn btn-primary" onClick={save}>{saved ? 'Saved ✓' : 'Save Settings'}</button>
 
       <button className="btn btn-ghost" style={{ color: 'var(--danger)' }}
-        onClick={() => {
+        onClick={async () => {
           if (window.confirm("Are you sure you want to reset the app? This will permanently delete your workout history, attempts, and progression start date. Your personal lift 1RMs and weight specs will be kept.")) {
-            store.resetAppButKeepLifts();
-            window.location.reload();
+            // MUST await: reloading before the cloud upsert lands makes
+            // fetchProfile restore the old data — the reset silently undoes itself.
+            try { await store.resetAppButKeepLifts(); } finally { window.location.reload(); }
           }
         }}>
         Reset to defaults

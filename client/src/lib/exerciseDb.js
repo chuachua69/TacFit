@@ -10,7 +10,7 @@
 import { supabase } from './supabase';
 import {
   BODY_PARTS, MOVEMENT_CATEGORIES, EQUIPMENT,
-  saveLocalCustomExercise, findExercise,
+  saveLocalCustomExercise, removeLocalCustomExercise, findExercise,
 } from './exerciseCatalog';
 
 async function currentUser() {
@@ -84,6 +84,9 @@ export async function logSessionToCloud(sessionEntry) {
     .filter(({ ex }) => ex)
     .map(({ ex }) => ({
       user_id: user.id,
+      // Custom exercises' JS id IS their cloud row uuid — link it. Seed
+      // exercises use slug ids, which aren't uuids, so those stay null.
+      exercise_id: ex.custom ? ex.id : null,
       exercise_name: ex.name,
       primary_body_part: ex.primary_body_part,
       secondary_body_parts: ex.secondary_body_parts,
@@ -94,8 +97,27 @@ export async function logSessionToCloud(sessionEntry) {
     }));
 
   if (!rows.length) return;
+  // Replace-then-insert: re-completing (editing) a session must not stack a
+  // second set of rows for the same session_id.
+  const { error: delError } = await supabase.from('workout_logs')
+    .delete().eq('user_id', user.id).eq('session_id', sessionEntry.logId);
+  if (delError) console.warn('workout_logs dedupe failed:', delError.message);
   const { error } = await supabase.from('workout_logs').insert(rows);
   if (error) console.warn('workout_logs write failed:', error.message);
+}
+
+/**
+ * Delete a custom exercise locally AND from the cloud. Local-only removal
+ * resurrected the exercise on the next Exercises-page mount (cloud fetch
+ * re-upserts every row it finds).
+ */
+export async function deleteCustomExercise(id) {
+  removeLocalCustomExercise(id);
+  const user = await currentUser();
+  if (!user) return;
+  const { error } = await supabase.from('exercises')
+    .delete().eq('id', id).eq('owner', user.id);
+  if (error) console.warn('Custom exercise cloud delete failed:', error.message);
 }
 
 /** Fetch the signed-in user's custom exercises from the cloud (device sync). */

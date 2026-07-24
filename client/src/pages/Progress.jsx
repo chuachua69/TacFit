@@ -98,12 +98,16 @@ export default function Progress() {
   const skipRate = totalLogged ? skippedWod.length / totalLogged : 0;
   const skipInfo = SKIP_INFO[dominantType] || SKIP_INFO.lift;
 
-  // 6-week cycle status
+  // 6-week cycle status. A future start date renders as "scheduled", not
+  // "started" — the WOD tab shows a countdown in that state and this card
+  // must not contradict it with a fake "42 days until test day".
   const startDate = profile.programStartDate ? new Date(profile.programStartDate) : null;
+  const notStarted = startDate && startDate.getTime() > Date.now();
   const daysIn = startDate ? Math.max(0, Math.floor((Date.now() - startDate.getTime()) / 86400000)) : 0;
+  const daysUntilStart = notStarted ? Math.ceil((startDate.getTime() - Date.now()) / 86400000) : 0;
   const currentWeek = startDate ? Math.min(6, Math.floor(daysIn / 7) + 1) : 1;
-  const cyclePct = startDate ? Math.min(100, Math.round((daysIn / 42) * 100)) : 0;
-  const testDue = startDate && daysIn >= 42;
+  const cyclePct = startDate && !notStarted ? Math.min(100, Math.round((daysIn / 42) * 100)) : 0;
+  const testDue = startDate && !notStarted && daysIn >= 42;
 
   return (
     <div className="screen" style={{ paddingTop: '1.25rem', paddingBottom: '6rem', gap: '1rem' }}>
@@ -115,19 +119,21 @@ export default function Progress() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <div>
               <div style={{ fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>6-week cycle</div>
-              <div style={{ fontWeight: 700 }}>Started {fmtDate(profile.programStartDate)}</div>
+              <div style={{ fontWeight: 700 }}>{notStarted ? 'Starts' : 'Started'} {fmtDate(profile.programStartDate)}</div>
             </div>
             <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--accent)', lineHeight: 1 }}>
-              Wk {currentWeek}<span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/6</span>
+              {notStarted ? '⏳' : <>Wk {currentWeek}<span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/6</span></>}
             </div>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${cyclePct}%`, background: 'var(--accent)', borderRadius: 999, transition: 'width .3s' }} />
           </div>
           <div style={{ fontSize: '0.72rem', fontWeight: testDue ? 700 : 400, color: testDue ? 'var(--accent)' : 'var(--text-muted)' }}>
-            {testDue
-              ? '✓ 6 weeks done — retest on the Test tab, then recalibrate your lifts.'
-              : `${42 - daysIn} days until test day.`}
+            {notStarted
+              ? `Scheduled — begins in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}.`
+              : testDue
+                ? '✓ 6 weeks done — retest on the Test tab, then recalibrate your lifts.'
+                : `${42 - daysIn} days until test day.`}
           </div>
         </div>
       )}
@@ -196,7 +202,7 @@ export default function Progress() {
 
       {/* Skip analysis — impact + remedy */}
       {skippedWod.length > 0 && (
-        <div className="card" style={{ border: '1px solid var(--warn)55', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="card" style={{ border: '1px solid color-mix(in srgb, var(--warn) 33%, transparent)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <span style={{ fontWeight: 800, color: 'var(--warn)' }}>⚠️ {skippedWod.length} session{skippedWod.length === 1 ? '' : 's'} skipped</span>
             <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--warn)' }}>mostly {skipInfo.area}</span>
@@ -250,7 +256,7 @@ export default function Progress() {
                   <div style={{ fontWeight: 700, fontSize: '0.86rem' }}>{name}</div>
                   <div style={{
                     fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent)',
-                    background: 'var(--accent)18', border: '1px solid var(--accent)35',
+                    background: 'color-mix(in srgb, var(--accent) 9%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 21%, transparent)',
                     padding: '2px 8px', borderRadius: 6
                   }}>
                     {bestText}

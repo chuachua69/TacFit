@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import RestTimer from './RestTimer';
 import EmomTimer from './EmomTimer';
 import ActiveSetTimer from './ActiveSetTimer';
-import { parseScheme } from '../lib/wodProgram';
+import { parseScheme, getEffectiveWeek, getProgressionPct } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount } from '../lib/feedback';
 import { pushGuard } from '../lib/guard';
@@ -56,18 +56,12 @@ const ALL_EXERCISES = [
   'Kettlebell Suitcase Carry'
 ].sort();
 
+// Single source of truth for week math lives in wodProgram.js — the previous
+// duplicate here used Math.abs(now - start), which counted weeks UPWARD for a
+// future start date (week 4 loads before day 1).
 function getProgressionPercentageForLift(liftKey, profile) {
   if (!profile.programStartDate) return 0.75;
-  const start = new Date(profile.programStartDate);
-  const now = new Date();
-  const diffTime = Math.abs(now - start);
-  const calendarWeek = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
-  
-  const logs = store.getWodLogs();
-  const skippedCount = logs.filter(w => w.status === 'skipped' && w.lifts && w.lifts.includes(liftKey)).length;
-  
-  const week = Math.min(Math.max(calendarWeek - skippedCount, 1), 6);
-  return 0.60 + (week * 0.05); // Week 1 = 65% ...
+  return getProgressionPct(getEffectiveWeek(liftKey));
 }
 
 function getBaselineWeight(name, profile, memory) {
@@ -99,6 +93,12 @@ function getBaselineWeight(name, profile, memory) {
     const oneRM = profile.oneRMs?.bench || 0;
     const pct = getProgressionPercentageForLift('bench', profile);
     return round(oneRM * pct);
+  }
+
+  // Leg press is a squat-pattern machine — the overhead-press 1RM would be a
+  // wildly wrong pre-fill. No barbell 1RM maps cleanly, so leave it blank.
+  if (n.includes('leg press')) {
+    return null;
   }
 
   // Overhead Press / Shoulder press
@@ -246,7 +246,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
 
         {session.emom && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', background: 'var(--accent)12', border: '1px solid var(--accent)33', borderRadius: 'var(--radius)', padding: '0.6rem 0.85rem' }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', background: 'color-mix(in srgb, var(--accent) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 'var(--radius)', padding: '0.6rem 0.85rem' }}>
               ⏱ EMOM — start each movement on the minute; repeat the 5-min block ×{session.emom.rounds}.
             </div>
             <button className="btn btn-primary" onClick={() => setEmom(true)}>▶ Run EMOM Timer</button>
@@ -318,7 +318,8 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                             name: val,
                             kind,
                             targetWeight: undefined,
-                            targetPct: undefined
+                            targetPct: undefined,
+                            note: undefined, // old exercise's cue makes no sense under the substitute
                           };
                           return initExercise(updatedInfo, profile, store.getExMemory());
                         }));
@@ -485,7 +486,7 @@ export default function SessionRunner({ session, dayLabel, logId, profile, exist
                                     onClick={() => setActiveSetTimer({ ei, si, name: ex.name, duration, isMaxTime })}
                                     style={{
                                       fontSize: '0.72rem', padding: '3px 8px', borderRadius: 6,
-                                      background: 'var(--accent)20', border: '1px solid var(--accent)50',
+                                      background: 'color-mix(in srgb, var(--accent) 13%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 31%, transparent)',
                                       color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', flexShrink: 0
                                     }}
                                   >

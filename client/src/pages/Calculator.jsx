@@ -76,7 +76,7 @@ export default function Calculator() {
       {result.events.map(ev => {
         const load = loadLabel(ev, profile);
         return (
-          <div key={ev.key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, border: `1px solid ${ev.met ? 'var(--success)30' : 'var(--border)'}` }}>
+          <div key={ev.key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, border: `1px solid ${ev.met ? 'color-mix(in srgb, var(--success) 19%, transparent)' : 'var(--border)'}` }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -104,7 +104,7 @@ export default function Calculator() {
                 <button onClick={() => setTimerFor(ev)}
                   style={{
                     padding: '0.4rem 0.85rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 700,
-                    color: 'var(--accent)', background: 'var(--accent)15', border: '1px solid var(--accent)45',
+                    color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 27%, transparent)',
                   }}>
                   ▶ Run timer
                 </button>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import BottomNav from '../components/BottomNav';
 import PageHeader from '../components/PageHeader';
-import { store } from '../store/profile';
+import { store, clearAllLocalData } from '../store/profile';
 import { supabase } from '../lib/supabase';
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -19,16 +19,7 @@ export default function Profile() {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    const keysToClear = [
-      'tac5_profile',
-      'tac5_attempts',
-      'tac5_events',
-      'tac5_wod',
-      'tac5_exmem',
-      'tac5_custom_exercises',
-      'dev_bypass'
-    ];
-    keysToClear.forEach(k => localStorage.removeItem(k));
+    clearAllLocalData(); // single source of truth for keys — no hand-kept list
     window.location.reload();
   };
 
