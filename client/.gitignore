@@ -33,3 +33,7 @@ app/build/
 build/
 *.aab
 *.apk
+
+# Android signing keystore — SECRET, never commit
+*.keystore
+*.jks

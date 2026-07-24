@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TacFit — Feature Graphic 1024×500</title>
+<style>
+  html,body { margin:0; background:#333; display:flex; align-items:center; justify-content:center; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  /* Screenshot THIS box at exactly 1024×500 (it has no border/margin). */
+  .fg {
+    width:1024px; height:500px; position:relative; overflow:hidden;
+    background:
+      radial-gradient(120% 140% at 15% 10%, #1c1c1c 0%, #0a0a0a 55%, #000 100%);
+    color:#fff; box-sizing:border-box; padding:0 72px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .fg::after {  /* subtle accent stripe */
+    content:""; position:absolute; right:-120px; top:-60px; width:520px; height:620px;
+    background:linear-gradient(135deg, rgba(200,162,74,0.16), rgba(200,162,74,0));
+    transform:rotate(18deg);
+  }
+  .kicker { color:#c8a24a; font-weight:800; letter-spacing:.22em; font-size:20px; text-transform:uppercase; margin-bottom:14px; }
+  h1 { font-size:76px; line-height:0.98; font-weight:900; letter-spacing:-0.02em; margin:0 0 18px; }
+  h1 .accent { color:#c8a24a; }
+  p { font-size:26px; color:#c9c9c9; max-width:620px; margin:0; line-height:1.35; }
+  .badge { position:absolute; right:70px; bottom:54px; z-index:2; text-align:right; }
+  .badge .b1 { font-size:22px; font-weight:800; color:#fff; }
+  .badge .b2 { font-size:16px; color:#9a9a9a; letter-spacing:.08em; }
+  .target { position:absolute; right:96px; top:70px; width:200px; height:200px; border-radius:50%;
+    border:6px solid rgba(200,162,74,0.55); display:flex; align-items:center; justify-content:center; z-index:2; }
+  .target::before { content:""; width:120px; height:120px; border-radius:50%; border:5px solid rgba(200,162,74,0.4); position:absolute; }
+  .target::after { content:""; width:44px; height:44px; border-radius:50%; background:#c8a24a; }
+</style>
+</head>
+<body>
+  <div class="fg">
+    <div class="kicker">Tactical Fitness</div>
+    <h1>Test. Train.<br><span class="accent">Retest.</span></h1>
+    <p>Score your 5-event assessment and run a 6-week program that adapts to your numbers.</p>
+    <div class="target"></div>
+    <div class="badge"><div class="b1">TacFit</div><div class="b2">ASSESSMENT · TRAINING</div></div>
+  </div>
+</body>
+</html>
