@@ -35,6 +35,14 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: client
+        env:
+          # Without these the GH Pages bundle falls back to the placeholder
+          # Supabase client (placeholder.supabase.co → DNS error on login).
+          # The anon key is PUBLIC by design — it ships in every served JS
+          # bundle (view-source on the Vercel site shows it); row-level
+          # security is what protects the data, not this key.
+          VITE_SUPABASE_URL: https://onzuguqbcdfblxdsekiz.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uenVndXFiY2RmYmx4ZHNla2l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Mjk1NTUsImV4cCI6MjA5OTEwNTU1NX0.Oh4W8-LDVtiGZyzVvViDmWShvWR4mwHyARawPQ5UyFs
 
       - uses: actions/configure-pages@v4
 
