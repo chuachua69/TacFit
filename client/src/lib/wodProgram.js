@@ -86,8 +86,10 @@ export function getCustomProgram(profile) {
   }));
 
   const runSessions = {
-    intervals: { slot: 'am', type: 'run', title: 'Hard Running (Intervals/Tempo)', focus: 'Link Strava for tracking' },
-    zone2: { slot: 'am', type: 'run', title: 'Long Aerobic Run (Zone 2)', focus: 'Link Strava for tracking' },
+    // Coaching cues, not integration promises — Strava was dropped, so copy
+    // telling the user to "link Strava" pointed at a feature that isn't there.
+    intervals: { slot: 'am', type: 'run', title: 'Hard Running (Intervals/Tempo)', focus: 'Hard efforts, full recovery between' },
+    zone2: { slot: 'am', type: 'run', title: 'Long Aerobic Run (Zone 2)', focus: 'Conversational pace — steady and easy' },
     easy: { slot: 'am', type: 'run', title: 'Easy Recovery Run', focus: 'Zone 1/2 nasal breathing only' }
   };
 

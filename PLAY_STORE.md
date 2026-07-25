@@ -96,10 +96,36 @@ Grab your gear. Let's get to work.
 | Asset | Spec | Status |
 |-------|------|--------|
 | App icon | 512×512 PNG | ✅ `client/store_icon.png` |
-| Feature graphic | 1024×500 PNG | ⏳ open `client/store/feature-graphic.html` in a browser, screenshot the box at 1024×500 (or use any screenshot tool's fixed crop) |
-| Phone screenshots | 2–8, min 320px side | ⏳ **fastest: open https://tac-fit-nine.vercel.app on your phone, screenshot WOD, Test, Progress, and the Exercise Library** |
+| Feature graphic | 1024×500 PNG | ✅ `client/store/screenshots/feature-graphic.png` |
+| Phone screenshots | 2–8, min 320px side | ✅ 5 in `client/store/screenshots/` — all exactly 1080×1920 (9:16) |
 
-Real phone screenshots beat emulated ones and take two minutes. Grab 3–4.
+Upload the phone screenshots in filename order; that's the order they appear in
+the listing, and it's deliberate:
+
+| File | Shows |
+|------|-------|
+| `01-wod-today.png` | Today's two sessions, ready to start |
+| `02-wod-week.png` | The whole week — completed / skipped / upcoming |
+| `03-test.png` | 5-event assessment + single-event training |
+| `04-progress.png` | 6-week cycle bar, tier score, event bests, consistency |
+| `05-exercises.png` | Exercise library with recovery status and F1–F4 fatigue ratings |
+
+### Regenerating them
+`scripts/shoot-store.mjs` drives the installed Chrome over the DevTools
+Protocol (no puppeteer/playwright dependency) and renders at 540×960 @ dsf 2,
+so output is exactly 1080×1920. It seeds a demo profile into localStorage
+first — week 4 of 6, 34 logged sessions, a scored retest — with numbers that
+satisfy the real scoring rules in `lib/scoring.js`, so nothing on screen
+contradicts the app's own arithmetic.
+
+```bash
+npm run dev          # in client/, must be up first
+node scripts/shoot-store.mjs
+```
+
+Note the seed deliberately logs nothing on *yesterday*: a day totalling >7
+fatigue makes today a global recovery-cap day, which buries the exercise
+library under identical red warnings.
 
 ## 5. Content rating
 Fill the questionnaire (**Policy → App content → Content rating**). TacFit has no

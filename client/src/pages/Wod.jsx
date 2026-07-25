@@ -64,7 +64,16 @@ function SessionCard({ session, dayKey, date, onRun, onRefresh }) {
         });
       });
 
-      if (doneCount === 0) {
+      if (totalSets === 0) {
+        // No set-level rows to judge: markDone() logs runs as
+        // exercises:[{ name }] with no `rows`, so absence of set data is not
+        // failure. Without this guard a run you marked done rendered as
+        // "🔴 Failed (0 sets done)" beside its own "✓ Done" button.
+        statusText = 'Completed';
+        statusColor = 'var(--success)';
+        borderColor = 'color-mix(in srgb, var(--success) 45%, transparent)';
+        statusIcon = '🟢';
+      } else if (doneCount === 0) {
         statusText = 'Failed (0 sets done)';
         statusColor = 'var(--danger)';
         borderColor = 'color-mix(in srgb, var(--danger) 45%, transparent)';
