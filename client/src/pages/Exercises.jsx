@@ -191,7 +191,10 @@ export default function Exercises() {
                     </div>
                     {!verdict.allowed && (
                       <div style={{ fontSize: '0.68rem', color: 'var(--danger)', marginTop: 3 }}>
-                        {verdict.warnings[0].warning}
+                        {/* `short`: the cap banner above already explains WHY
+                            today is capped — repeating it on all ~40 cards
+                            turned the list into one red paragraph. */}
+                        {verdict.warnings[0].short || verdict.warnings[0].warning}
                       </div>
                     )}
                   </div>

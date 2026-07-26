@@ -127,6 +127,12 @@ Note the seed deliberately logs nothing on *yesterday*: a day totalling >7
 fatigue makes today a global recovery-cap day, which buries the exercise
 library under identical red warnings.
 
+⚠️ The seed uses **fixed dates** anchored to the week it was written
+(programme start Mon 2026-06-29, captured Sat 2026-07-25). Re-running it much
+later drifts — and on a **Sunday** the WOD tab is a full rest day, so
+`01-wod-today.png` would come out empty. If you re-shoot, bump the `WEEKS`
+Mondays in `store-seed.js` so "today" lands Mon–Sat.
+
 ## 5. Content rating
 Fill the questionnaire (**Policy → App content → Content rating**). TacFit has no
 objectionable content → it will come back **Everyone / PEGI 3**. Answer "No" to all

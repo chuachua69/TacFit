@@ -5,7 +5,7 @@ import SessionRunner from '../components/SessionRunner';
 import { PROGRAM, DAY_LABEL, todayKey, tomorrowKey, dayFor, sessionLogId, dateForDayKey, localDateStr } from '../lib/wodProgram';
 import { store } from '../store/profile';
 import { fxCount, fxUncount } from '../lib/feedback';
-import { historyFromWodLogs, evaluateSession } from '../lib/recovery';
+import { historyFromWodLogs, evaluateSession, dayCap } from '../lib/recovery';
 import { logSessionToCloud } from '../lib/exerciseDb';
 
 const TYPE_BADGE = {
@@ -254,7 +254,13 @@ export default function Wod() {
     const history = historyFromWodLogs(store.getWodLogs().filter(w => w.logId !== logId));
     const names = (session.exercises || []).map(e => e.name);
     const { flagged } = evaluateSession(names, history);
-    const warnings = flagged.map(f => f.verdict.warnings[0]?.warning).filter(Boolean);
+    // Use the short form per exercise and state the shared recovery-cap
+    // reason once at the top — the full text repeats that reason verbatim,
+    // so several flagged exercises printed the same paragraph N times.
+    const top = flagged.map(f => f.verdict.warnings[0]).filter(Boolean);
+    const warnings = top.map(w => w.short || w.warning);
+    const cap = dayCap(history);
+    if (cap.capped && top.some(w => w.rule === 'R3')) warnings.unshift(cap.warning);
     setRunning({ session, dayKey, date, warnings });
   };
 

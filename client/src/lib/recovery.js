@@ -36,7 +36,11 @@
  *
  * @typedef {Object} Verdict
  * @property {boolean} allowed      False = flagged by at least one rule.
- * @property {{rule: string, warning: string, safeAfter: string}[]} warnings
+ * @property {{rule: string, warning: string, short?: string, safeAfter: string}[]} warnings
+ *   `warning` is self-contained — use it where the warning stands alone.
+ *   `short` (R3 only) drops the shared "why today is capped" explanation and
+ *   keeps just the exercise-specific clause; use it when rendering many
+ *   warnings together AND showing that explanation once alongside them.
  */
 
 import { findExercise } from './exerciseCatalog';
@@ -190,11 +194,16 @@ export function evaluateExercise(ex, history, now = new Date()) {
   }
 
   // R3 — recovery-cap day restricts anything above light work.
+  // `short` carries ONLY the part unique to this exercise. The rest of the
+  // sentence (why today is capped) is identical for every exercise, so a
+  // caller rendering a list must show it once — see the note on `short` in
+  // the Verdict typedef — or the screen becomes a wall of the same paragraph.
   const cap = dayCap(history, now);
   if (cap.capped && ex.fatigue_score > cap.maxFatigue) {
     warnings.push({
       rule: 'R3',
       safeAfter: new Date(new Date(now).setHours(24, 0, 0, 0)).toISOString(),
+      short: `${ex.name} (fatigue ${ex.fatigue_score}) is above today's cap of ${cap.maxFatigue}.`,
       warning: `${ex.name} (fatigue ${ex.fatigue_score}) exceeds today's recovery cap. ${cap.warning}`,
     });
   }
