@@ -140,17 +140,39 @@ violence/sexual/drugs/gambling questions. Category: **Reference, News, or Educat
 or **Health & Fitness**.
 
 ## 6. Data safety form (**App content → Data safety**)
-Declare honestly (matches the privacy policy):
-- **Does your app collect or share user data?** → **Yes** (only if signed in).
-- **Data types collected:**
-  - *Personal info → Email address* — Collected, **not** shared. Purpose: Account
-    management, App functionality. Not required (sign-in is optional).
-  - *Personal info → Name* — Collected, not shared. Purpose: Account management.
-  - *App activity / Other user-generated content* (your workout logs & entries) —
-    Collected, not shared. Purpose: App functionality.
-- **Is data encrypted in transit?** → **Yes** (HTTPS + Supabase TLS).
-- **Can users request deletion?** → **Yes** (email request; stated in the policy).
-- **No** advertising or analytics data collection.
+
+⚠️ Corrected 2026-07-26. Two earlier answers here were wrong — read the reasons,
+they both cut toward *under*-declaring, which is what Google enforces against.
+
+**"We don't collect any data" is not true for TacFit.** Requiring Google sign-in
+means you receive an email address and name. Separately, the app syncs
+bodyweight, 1RMs and every workout log to Supabase. So:
+
+- **Does your app collect or share user data?** → **Yes**
+- **Data types collected** (all *collected*, none *shared*, all stored not ephemeral):
+
+| Category | Type | Purpose | Required? |
+|---|---|---|---|
+| Personal info | Email address | Account management, App functionality | **Required** |
+| Personal info | Name | Account management | **Required** |
+| Health and fitness | **Fitness info** (bodyweight, 1RMs, workout logs) | App functionality | **Required** |
+
+- **Is data encrypted in transit?** → **Yes** (HTTPS + Supabase TLS)
+- **Can users request deletion?** → **Yes** (email request; stated in the policy)
+- **Advertising ID** → **No.** Verified: `app/src/main/AndroidManifest.xml`
+  declares only `POST_NOTIFICATIONS`, there is no `AD_ID` permission, and there
+  is no ad or analytics SDK. (This declaration also clears the "advertising ID"
+  warning Play shows on the release page for `targetSdkVersion 35`.)
+
+### The two corrections
+1. **Email/name are REQUIRED, not optional.** A production build has no guest
+   path — `dev_bypass` is gated behind `import.meta.env.DEV` and Vite compiles
+   the branch out — so a user cannot reach any screen without signing in.
+   Declaring collection "optional" would be false.
+2. **Workout data is "Health and fitness → Fitness info", not just "App
+   activity".** Bodyweight and training logs are a sensitive category with its
+   own disclosure rules; filing them as generic user-generated content
+   under-declares them.
 
 ## 7. Other required declarations
 - **Target audience & content:** 13+ (not directed at children).
