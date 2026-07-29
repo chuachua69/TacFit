@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import BottomNav from '../components/BottomNav';
 import PageHeader from '../components/PageHeader';
-import { store, clearAllLocalData } from '../store/profile';
+import { store, clearAllLocalData, endGuestSession } from '../store/profile';
 import { supabase } from '../lib/supabase';
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -20,6 +20,15 @@ export default function Profile() {
   const signOut = async () => {
     await supabase.auth.signOut();
     clearAllLocalData(); // single source of truth for keys — no hand-kept list
+    window.location.reload();
+  };
+
+  // Drop back to the login screen WITHOUT wiping anything: the guest's training
+  // is still in localStorage, and signing into a fresh account keeps it
+  // (fetchProfile only overwrites when a cloud row already exists).
+  const leaveGuest = () => {
+    endGuestSession();
+    localStorage.removeItem('dev_bypass');
     window.location.reload();
   };
 
@@ -67,7 +76,13 @@ export default function Profile() {
 
       {user
         ? <button className="btn btn-secondary" onClick={signOut}>Sign out</button>
-        : <button className="btn btn-primary" onClick={() => { localStorage.removeItem('dev_bypass'); window.location.reload(); }}>Sign in</button>}
+        : <>
+            <button className="btn btn-primary" onClick={leaveGuest}>Sign in to sync</button>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+              Your training stays on this device — signing in keeps it and adds
+              cross-device sync.
+            </p>
+          </>}
 
       <BottomNav active="" />
     </div>

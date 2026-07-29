@@ -12,7 +12,7 @@ import ReloadPrompt from './components/ReloadPrompt';
 import Drawer from './components/Drawer';
 import Auth from './components/Auth';
 import Onboarding from './pages/Onboarding';
-import { store } from './store/profile';
+import { store, isGuest } from './store/profile';
 import { setMuted, isMuted, unlockAudio, fxTap } from './lib/feedback';
 import { isGuarded } from './lib/guard';
 import { supabase } from './lib/supabase';
@@ -122,9 +122,12 @@ export default function App() {
     return <div className="screen" style={{ justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
   }
 
-  // dev_bypass only works in dev builds — in production the flag is ignored
-  // (Vite dead-code-eliminates the branch), so the login wall is real.
-  if (!session && !(import.meta.env.DEV && localStorage.getItem('dev_bypass'))) {
+  // Two ways past the login screen without a session:
+  //  - guest mode (production): the app runs entirely on localStorage, so
+  //    sign-in is only needed for cross-device sync. This is also what lets a
+  //    Play reviewer see the app without us handing out account credentials.
+  //  - dev_bypass: dev builds only; Vite dead-code-eliminates the branch.
+  if (!session && !isGuest() && !(import.meta.env.DEV && localStorage.getItem('dev_bypass'))) {
     return <Auth />;
   }
 

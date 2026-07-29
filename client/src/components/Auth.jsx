@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { startGuestSession } from '../store/profile';
 import { Target } from 'lucide-react';
 
 export default function Auth() {
@@ -17,6 +18,14 @@ export default function Auth() {
     });
     if (error) console.error('Error logging in:', error.message);
     setLoading(false);
+  };
+
+  // Everything works offline from localStorage, so a guest gets the whole app.
+  // Signing in later keeps that data: fetchProfile only overwrites local state
+  // when a cloud row already exists, which it won't for a brand-new account.
+  const handleGuest = () => {
+    startGuestSession();
+    window.location.reload();
   };
 
   const handleDevBypass = () => {
@@ -41,6 +50,20 @@ export default function Auth() {
         >
           {loading ? 'Connecting...' : 'Continue with Google'}
         </button>
+
+        <button
+          className="btn btn-secondary"
+          onClick={handleGuest}
+          disabled={loading}
+          style={{ padding: '0.9rem' }}
+        >
+          Continue without an account
+        </button>
+
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+          Everything works offline either way. Signing in with Google just syncs
+          your training across devices — you can do it later from Profile.
+        </p>
 
         {import.meta.env.DEV && (
           <button 

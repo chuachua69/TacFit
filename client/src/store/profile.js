@@ -12,9 +12,19 @@ const KEYS = {
   EXMEM: 'tac5_exmem',         // last-used weight per exercise name
 };
 
+// Guest mode: the app is fully usable offline from localStorage, so signing in
+// is only needed for cross-device sync. Unlike `dev_bypass` (dev builds only)
+// this is honoured in production — it's what lets a first-time user, or a Play
+// reviewer, reach the app without a Google account.
+const GUEST_KEY = 'tac5_guest';
+
+export const isGuest = () => !!localStorage.getItem(GUEST_KEY);
+export const startGuestSession = () => localStorage.setItem(GUEST_KEY, '1');
+export const endGuestSession = () => localStorage.removeItem(GUEST_KEY);
+
 // Every localStorage key the app writes, in ONE place. Sign-out handlers use
 // this so a new storage key can never silently leak across accounts again.
-const ALL_LOCAL_KEYS = [...Object.values(KEYS), 'tac5_custom_exercises', 'dev_bypass'];
+const ALL_LOCAL_KEYS = [...Object.values(KEYS), 'tac5_custom_exercises', 'dev_bypass', GUEST_KEY];
 
 /** Wipe all app data on this device (used on sign-out). */
 export function clearAllLocalData() {
