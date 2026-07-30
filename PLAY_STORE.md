@@ -4,7 +4,51 @@ Everything needed to publish TacFit to the Play Store. The app is a **TWA**
 (Trusted Web Activity) — an Android wrapper around the live web app at
 `https://tac-fit-nine.vercel.app/`, built with Bubblewrap.
 
-**Status: the signed app bundle is already built.** →
+## ⚠️ The bundle is NOT signed — sign it before uploading
+
+This file previously claimed "the signed app bundle is already built". **That was
+wrong**, and Play rejects the upload with *"All uploaded bundles must be
+signed."* Verified 2026-07-30:
+
+- `client/app/build/outputs/bundle/release/app-release.aab` contains **zero
+  `META-INF/` entries** — a signed bundle has `MANIFEST.MF` + `.SF` + `.RSA`
+  there, so this one was never signed.
+- `client/app/build.gradle` has **no `signingConfigs` block at all**, so the
+  Gradle `bundleRelease` task could only ever emit an unsigned bundle.
+- `twa-manifest.json` points `signingKey.path` at `client/android.keystore`
+  (alias `android`) — **that file does not exist on disk.** The keystore was
+  removed when it was untracked from the public repo and never regenerated.
+
+### Fix: make a keystore and sign (safe — the app has never been published)
+
+A brand-new upload key is fine here: nothing has ever shipped, so no existing
+install can break. Under Play App Signing the upload key is resettable anyway.
+
+Bubblewrap's bundled JDK 17 has the tools (nothing is on PATH):
+`C:\Users\chuaz\.bubblewrap\jdk_binary\jdk-17.0.11+9\bin\`
+
+```powershell
+$JB = "C:\Users\chuaz\.bubblewrap\jdk_binary\jdk-17.0.11+9\bin"
+cd "C:\Users\chuaz\OneDrive\Desktop\AI_Workspace\TacFit\client"
+
+# 1. Create the upload keystore (prompts for a password — pick one and KEEP it)
+& "$JB\keytool.exe" -genkeypair -v -keystore android.keystore `
+    -alias android -keyalg RSA -keysize 2048 -validity 10000
+
+# 2. Sign the bundle
+& "$JB\jarsigner.exe" -verbose -sigalg SHA256withRSA -digestalg SHA-256 `
+    -keystore android.keystore `
+    app\build\outputs\bundle\release\app-release.aab android
+
+# 3. Verify — must print "jar verified"
+& "$JB\jarsigner.exe" -verify app\build\outputs\bundle\release\app-release.aab
+```
+
+**Keep that password.** Losing it means generating a new upload key and asking
+Google to reset it. `android.keystore` is gitignored (`*.keystore`) and must
+never be committed — it was in the public repo once already.
+
+Signed bundle to upload →
 `client/app/build/outputs/bundle/release/app-release.aab`
 
 ---
