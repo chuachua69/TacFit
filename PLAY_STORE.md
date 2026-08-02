@@ -53,25 +53,34 @@ Signed bundle to upload →
 
 ---
 
-## ⚠️ READ FIRST — the assetlinks fingerprint gotcha (breaks the app if skipped)
+## The assetlinks fingerprint — fixed 2026-08-02
 
 A TWA only opens full-screen (no browser address bar) if
 `https://tac-fit-nine.vercel.app/.well-known/assetlinks.json` lists the SHA-256
 fingerprint of the key that **actually signed the installed app**.
 
-When you enrol in **Play App Signing** (Google's default, recommended), Google
-re-signs your app with *its own* key. So the fingerprint players need is
-**Google's app-signing fingerprint**, which is different from the local
-`android.keystore` fingerprint currently in the file.
+Under **Play App Signing**, Google re-signs the app with *its own* key, so the
+fingerprint that matters is Google's — not the local `android.keystore` one.
+The file originally carried `2C:C2:9D:…`, the fingerprint of a keystore that was
+deleted when it was untracked from the public repo. It matched nothing, so the
+installed app showed a Chrome URL bar. Both current fingerprints:
 
-**After you upload the AAB and create the app in Play Console:**
-1. Play Console → your app → **Test and release → Setup → App integrity → App signing**.
-2. Copy the **SHA-256 certificate fingerprint** under "App signing key certificate".
-3. Add it to `client/public/.well-known/assetlinks.json` (keep the existing one too —
-   an array of both is fine). Then redeploy (merge to `main`).
-4. Verify `https://tac-fit-nine.vercel.app/.well-known/assetlinks.json` shows both.
+| Key | SHA-256 | Signs |
+|---|---|---|
+| **Google app signing** (Play Console → Protected with Play → App signing) | `E9:AB:F4:40:…:04:03:D3` | every install from Play |
+| **Upload key** (`client/android.keystore`) | `05:65:39:D2:…:23:A6:C5:F8` | locally-built/sideloaded APKs |
 
-If you skip this, the app installs and runs but shows a Chrome URL bar at the top.
+Only the first is needed for Play installs. The upload key is included so a
+`bubblewrap build` APK sideloaded for testing also opens full-screen.
+
+Getting the value again if the key ever changes: Play Console →
+**Protected with Play → App signing** → the **Digital Asset Links JSON** panel at
+the bottom prints the exact snippet. Use that, not the "Upload key certificate"
+fingerprint further up the same page — they're different keys and mixing them up
+is the usual cause of a stubborn URL bar.
+
+Vercel serves `/.well-known/` as a static file, ahead of the catch-all SPA
+rewrite in `client/vercel.json` — verified 200 `application/json`.
 
 ---
 
@@ -248,7 +257,7 @@ first upload; increment for every subsequent one.
 - [ ] Merge this branch to `main` so `privacy.html` is live at the URL above (verify it loads).
 - [ ] Play Console account created + verified ($25 paid).
 - [ ] AAB uploaded (internal testing track first).
-- [ ] **assetlinks.json updated with Google's Play-signing SHA-256** + redeployed.
+- [x] **assetlinks.json updated with Google's Play-signing SHA-256** + redeployed.
 - [ ] Installed from internal track → opens full-screen, no URL bar.
 - [ ] Store listing, graphics, content rating, data safety all filled.
 - [ ] Promote to Production.
