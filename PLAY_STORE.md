@@ -4,30 +4,83 @@ Everything needed to publish TacFit to the Play Store. The app is a **TWA**
 (Trusted Web Activity) — an Android wrapper around the live web app at
 `https://tac-fit-nine.vercel.app/`, built with Bubblewrap.
 
-**Status: the signed app bundle is already built.** →
+## ⚠️ The bundle is NOT signed — sign it before uploading
+
+This file previously claimed "the signed app bundle is already built". **That was
+wrong**, and Play rejects the upload with *"All uploaded bundles must be
+signed."* Verified 2026-07-30:
+
+- `client/app/build/outputs/bundle/release/app-release.aab` contains **zero
+  `META-INF/` entries** — a signed bundle has `MANIFEST.MF` + `.SF` + `.RSA`
+  there, so this one was never signed.
+- `client/app/build.gradle` has **no `signingConfigs` block at all**, so the
+  Gradle `bundleRelease` task could only ever emit an unsigned bundle.
+- `twa-manifest.json` points `signingKey.path` at `client/android.keystore`
+  (alias `android`) — **that file does not exist on disk.** The keystore was
+  removed when it was untracked from the public repo and never regenerated.
+
+### Fix: make a keystore and sign (safe — the app has never been published)
+
+A brand-new upload key is fine here: nothing has ever shipped, so no existing
+install can break. Under Play App Signing the upload key is resettable anyway.
+
+Bubblewrap's bundled JDK 17 has the tools (nothing is on PATH):
+`C:\Users\chuaz\.bubblewrap\jdk_binary\jdk-17.0.11+9\bin\`
+
+```powershell
+$JB = "C:\Users\chuaz\.bubblewrap\jdk_binary\jdk-17.0.11+9\bin"
+cd "C:\Users\chuaz\OneDrive\Desktop\AI_Workspace\TacFit\client"
+
+# 1. Create the upload keystore (prompts for a password — pick one and KEEP it)
+& "$JB\keytool.exe" -genkeypair -v -keystore android.keystore `
+    -alias android -keyalg RSA -keysize 2048 -validity 10000
+
+# 2. Sign the bundle
+& "$JB\jarsigner.exe" -verbose -sigalg SHA256withRSA -digestalg SHA-256 `
+    -keystore android.keystore `
+    app\build\outputs\bundle\release\app-release.aab android
+
+# 3. Verify — must print "jar verified"
+& "$JB\jarsigner.exe" -verify app\build\outputs\bundle\release\app-release.aab
+```
+
+**Keep that password.** Losing it means generating a new upload key and asking
+Google to reset it. `android.keystore` is gitignored (`*.keystore`) and must
+never be committed — it was in the public repo once already.
+
+Signed bundle to upload →
 `client/app/build/outputs/bundle/release/app-release.aab`
 
 ---
 
-## ⚠️ READ FIRST — the assetlinks fingerprint gotcha (breaks the app if skipped)
+## The assetlinks fingerprint — fixed 2026-08-02
 
 A TWA only opens full-screen (no browser address bar) if
 `https://tac-fit-nine.vercel.app/.well-known/assetlinks.json` lists the SHA-256
 fingerprint of the key that **actually signed the installed app**.
 
-When you enrol in **Play App Signing** (Google's default, recommended), Google
-re-signs your app with *its own* key. So the fingerprint players need is
-**Google's app-signing fingerprint**, which is different from the local
-`android.keystore` fingerprint currently in the file.
+Under **Play App Signing**, Google re-signs the app with *its own* key, so the
+fingerprint that matters is Google's — not the local `android.keystore` one.
+The file originally carried `2C:C2:9D:…`, the fingerprint of a keystore that was
+deleted when it was untracked from the public repo. It matched nothing, so the
+installed app showed a Chrome URL bar. Both current fingerprints:
 
-**After you upload the AAB and create the app in Play Console:**
-1. Play Console → your app → **Test and release → Setup → App integrity → App signing**.
-2. Copy the **SHA-256 certificate fingerprint** under "App signing key certificate".
-3. Add it to `client/public/.well-known/assetlinks.json` (keep the existing one too —
-   an array of both is fine). Then redeploy (merge to `main`).
-4. Verify `https://tac-fit-nine.vercel.app/.well-known/assetlinks.json` shows both.
+| Key | SHA-256 | Signs |
+|---|---|---|
+| **Google app signing** (Play Console → Protected with Play → App signing) | `E9:AB:F4:40:…:04:03:D3` | every install from Play |
+| **Upload key** (`client/android.keystore`) | `05:65:39:D2:…:23:A6:C5:F8` | locally-built/sideloaded APKs |
 
-If you skip this, the app installs and runs but shows a Chrome URL bar at the top.
+Only the first is needed for Play installs. The upload key is included so a
+`bubblewrap build` APK sideloaded for testing also opens full-screen.
+
+Getting the value again if the key ever changes: Play Console →
+**Protected with Play → App signing** → the **Digital Asset Links JSON** panel at
+the bottom prints the exact snippet. Use that, not the "Upload key certificate"
+fingerprint further up the same page — they're different keys and mixing them up
+is the usual cause of a stubborn URL bar.
+
+Vercel serves `/.well-known/` as a static file, ahead of the catch-all SPA
+rewrite in `client/vercel.json` — verified 200 `application/json`.
 
 ---
 
@@ -204,7 +257,7 @@ first upload; increment for every subsequent one.
 - [ ] Merge this branch to `main` so `privacy.html` is live at the URL above (verify it loads).
 - [ ] Play Console account created + verified ($25 paid).
 - [ ] AAB uploaded (internal testing track first).
-- [ ] **assetlinks.json updated with Google's Play-signing SHA-256** + redeployed.
+- [x] **assetlinks.json updated with Google's Play-signing SHA-256** + redeployed.
 - [ ] Installed from internal track → opens full-screen, no URL bar.
 - [ ] Store listing, graphics, content rating, data safety all filled.
 - [ ] Promote to Production.
